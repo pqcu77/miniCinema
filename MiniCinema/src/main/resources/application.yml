@@ -1,0 +1,27 @@
+# src/main/resources/application.yml
+spring:
+  datasource:
+    driver-class-name: org.opengauss.Driver
+    url: jdbc:opengauss://localhost:5432/minicinema
+    username: gaussdb
+    password: Cinema@123
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  mvc:
+    static-path-pattern: /static/**
+
+server:
+  port: 8080
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.maoyan: debug
