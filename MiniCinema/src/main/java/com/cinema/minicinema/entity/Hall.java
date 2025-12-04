@@ -1,21 +1,20 @@
 package com.cinema.minicinema.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("halls")
+// 移除 @TableName 注解
 public class Hall {
-    @TableId(type = IdType.AUTO)
+    // 移除 @TableId 注解
     private Integer hallId;
 
     private Integer cinemaId;
-    private String hallName;
+    private String name;
+    private Integer capacity;
     private String hallType;
-    private Integer totalSeats;
-    private String seatLayout;
+    private String facilities;
 
-    @TableField(fill = FieldFill.INSERT)
+    // 移除 @TableField 注解
     private LocalDateTime createTime;
 }

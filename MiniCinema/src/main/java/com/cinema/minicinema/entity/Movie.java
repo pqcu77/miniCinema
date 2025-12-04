@@ -1,14 +1,12 @@
 package com.cinema.minicinema.entity;
-import com.baomidou.mybatisplus.annotation.*;
+
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("movies")
 public class Movie {
-    @TableId(type = IdType.AUTO)
     private Integer movieId;
 
     private String title;
@@ -26,6 +24,5 @@ public class Movie {
     private BigDecimal boxOffice;
     private String status;
 
-    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

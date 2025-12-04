@@ -1,15 +1,13 @@
 package com.cinema.minicinema.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("cinemas")
+// 移除 @TableName 注解
 public class Cinema {
-    @TableId(type = IdType.AUTO)
+    // 移除 @TableId 注解
     private Integer cinemaId;
 
     private String name;
@@ -21,6 +19,6 @@ public class Cinema {
     private BigDecimal latitude;
     private BigDecimal longitude;
 
-    @TableField(fill = FieldFill.INSERT)
+    // 移除 @TableField 注解
     private LocalDateTime createTime;
 }

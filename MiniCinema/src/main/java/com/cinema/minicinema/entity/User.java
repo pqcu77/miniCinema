@@ -1,14 +1,18 @@
 package com.cinema.minicinema.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("users")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+// 移除 @TableName 注解
 public class User {
-    @TableId(type = IdType.AUTO)
+    // 移除 @TableId 注解
     private Integer userId;
 
     private String username;
@@ -17,8 +21,11 @@ public class User {
     private String phone;
     private String avatarUrl;
 
-    @TableField(fill = FieldFill.INSERT)
+    // 移除 @TableField 注解
     private LocalDateTime createTime;
 
     private LocalDateTime lastLoginTime;
+
+    // 移除 @TableLogic 注解
+    private Integer deleted;
 }
