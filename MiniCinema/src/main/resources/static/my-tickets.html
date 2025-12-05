@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的票券</title>
+    <link rel="stylesheet" href="/css/ticket.css">
+</head>
+<body>
+    <div class="navbar">
+        <h1>迷你电影院</h1>
+        <div class="nav-links">
+            <a href="/templates/index.html">首页</a>
+            <a href="/templates/my-orders.html">我的订单</a>
+            <a href="#">个人中心</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>我的票券</h2>
+
+        <div class="filter-bar">
+            <select id="statusFilter" onchange="filterTickets()">
+                <option value="">全部</option>
+                <option value="0">未使用</option>
+                <option value="1">已使用</option>
+            </select>
+        </div>
+
+        <div id="emptyTickets" class="empty-message" style="display: none;">
+            <p>暂无票券</p>
+            <a href="/templates/index.html" class="btn-primary">去购票</a>
+        </div>
+
+        <div id="ticketsContent" style="display: none;">
+            <div id="ticketList" class="ticket-grid">
+            </div>
+        </div>
+    </div>
+
+    <!-- 票券详情模态框 -->
+    <div id="ticketModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/ticket.js"></script>
+</body>
+</html>

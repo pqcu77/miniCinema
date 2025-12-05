@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付</title>
+    <link rel="stylesheet" href="/static/css/payment.css">
+</head>
+<body>
+    <div class="navbar">
+        <h1>迷你电影院</h1>
+    </div>
+
+    <div class="container">
+        <div class="order-steps">
+            <div class="step">1. 订单确认</div>
+            <div class="step active">2. 支付</div>
+            <div class="step">3. 完成</div>
+        </div>
+
+        <div class="payment-container">
+            <div class="payment-info">
+                <h2>订单支付</h2>
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>订单号:</span>
+                        <span id="orderId"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>应付金额:</span>
+                        <span id="payAmount" class="amount">¥0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-methods">
+                <h3>选择支付方式</h3>
+                
+                <div class="method-item" onclick="selectPayment('alipay')">
+                    <input type="radio" name="paymentMethod" value="alipay" id="alipay">
+                    <label for="alipay">
+                        <div class="method-icon">🔵</div>
+                        <div class="method-name">支付宝</div>
+                        <div class="method-desc">使用支付宝账户支付</div>
+                    </label>
+                </div>
+
+                <div class="method-item" onclick="selectPayment('wechat')">
+                    <input type="radio" name="paymentMethod" value="wechat" id="wechat">
+                    <label for="wechat">
+                        <div class="method-icon">💚</div>
+                        <div class="method-name">微信支付</div>
+                        <div class="method-desc">使用微信账户支付</div>
+                    </label>
+                </div>
+
+                <div class="method-item" onclick="selectPayment('card')">
+                    <input type="radio" name="paymentMethod" value="card" id="card">
+                    <label for="card">
+                        <div class="method-icon">💳</div>
+                        <div class="method-name">银行卡支付</div>
+                        <div class="method-desc">使用银行卡支付</div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="qrcodeContainer" style="display: none;">
+                <h3>扫描二维码支付</h3>
+                <div id="qrcode" class="qrcode-box"></div>
+                <p>请使用微信/支付宝扫描二维码完成支付</p>
+            </div>
+
+            <div class="payment-actions">
+                <button onclick="goBackPayment()" class="btn-secondary">返回</button>
+                <button onclick="confirmPayment()" class="btn-primary">确认支付</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/payment.js"></script>
+</body>
+</html>
