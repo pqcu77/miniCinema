@@ -1,0 +1,300 @@
+{
+  "info": {
+    "name": "MiniCinema API 测试",
+    "description": "MiniCinema 电影票务系统 API 接口测试集合",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "用户管理",
+      "item": [
+        {
+          "name": "用户注册",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\",\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/user/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["user", "register"]
+            },
+            "description": "新用户注册"
+          },
+          "response": []
+        },
+        {
+          "name": "用户登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/user/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["user", "login"]
+            },
+            "description": "用户登录"
+          },
+          "response": []
+        },
+        {
+          "name": "修改用户信息",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/user/update",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["user", "update"]
+            },
+            "description": "修改用户信息（需要登录 token）"
+          },
+          "response": []
+        },
+        {
+          "name": "修改密码",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/user/changePassword",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["user", "changePassword"]
+            },
+            "description": "修改密码（需要登录 token）"
+          },
+          "response": []
+        },
+        {
+          "name": "退出登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/user/logout",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["user", "logout"]
+            },
+            "description": "退出登录（需要登录 token）"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "电影管理",
+      "item": [
+        {
+          "name": "获取电影列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/movie/list?page=1&pageSize=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["movie", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "获取电影列表（分页）"
+          },
+          "response": []
+        },
+        {
+          "name": "获取电影详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/movie/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["movie", "1"]
+            },
+            "description": "获取指定电影的详细信息"
+          },
+          "response": []
+        },
+        {
+          "name": "搜索电影",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/movie/search?keyword=复仇者",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["movie", "search"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "复仇者"
+                }
+              ]
+            },
+            "description": "搜索电影"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "收藏管理",
+      "item": [
+        {
+          "name": "添加收藏",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieId\": 1\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/favorite/add",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["favorite", "add"]
+            },
+            "description": "收藏电影（需要登录 token）"
+          },
+          "response": []
+        },
+        {
+          "name": "取消收藏",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/favorite/remove/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["favorite", "remove", "1"]
+            },
+            "description": "取消收藏电影（需要登录 token）"
+          },
+          "response": []
+        },
+        {
+          "name": "获取收藏列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/favorite/list",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["favorite", "list"]
+            },
+            "description": "获取用户的收藏列表（需要登录 token）"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+

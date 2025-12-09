@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>热映电影 - MiniCinema</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1 onclick="window.location.href='index.html'">🎬 MiniCinema</h1>
+    </div>
+    <div class="header-right"></div>
+  </header>
+
+  <div class="container">
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="搜索您想看的电影...">
+      <button onclick="handleSearch()" class="search-btn">搜索</button>
+    </div>
+
+    <div id="moviesContainer" class="movies-grid"></div>
+    <div id="pagination" class="pagination"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pages/movies.js"></script>
+</body>
+</html>
+
