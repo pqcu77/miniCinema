@@ -95,3 +95,33 @@ const api = {
   }
 };
 
+// ===== 电影搜索和推荐 API =====
+
+/**
+ * 搜索电影
+ */
+function searchMovies(keyword, page = 0, size = 10) {
+  return fetch(`${API_BASE_URL}/movies/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`)
+    .then(res => res.json())
+    .catch(error => {
+      console.error('Search error:', error);
+      return { code: -1, message: '搜索失败' };
+    });
+}
+
+/**
+ * 获取电影推荐
+ */
+function getMovieRecommendations(movieId, userId = null, limit = 6) {
+  let url = `${API_BASE_URL}/movies/${movieId}/recommendations?limit=${limit}`;
+  if (userId) {
+    url += `&userId=${userId}`;
+  }
+
+  return fetch(url)
+    .then(res => res.json())
+    .catch(error => {
+      console.error('Recommendation error:', error);
+      return { code: -1, message: '推荐获取失败' };
+    });
+}
