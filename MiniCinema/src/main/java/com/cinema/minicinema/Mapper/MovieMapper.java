@@ -7,6 +7,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * MovieMapper 接口 - 所有实现已委托给 MovieMapperAdapter
+ * 该适配器使用 MovieRepository (JPA) 的原生 SQL 查询实现所有方法
+ */
 @Mapper
 public interface MovieMapper {
 
@@ -58,5 +62,5 @@ public interface MovieMapper {
 
     // 12. 根据类型获取电影
     List<Movie> getMoviesByGenre(@Param("genre") String genre,
-                                 @Param("count") Integer count);
+                                 @Param("count") int count);
 }

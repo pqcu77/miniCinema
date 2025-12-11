@@ -4,8 +4,14 @@ const storage = {
   removeToken: () => localStorage.removeItem('token'),
   setUser: (user) => localStorage.setItem('user', JSON.stringify(user)),
   getUser: () => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    try {
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : null;
+    } catch (e) {
+      console.error('Failed to parse user data:', e);
+      localStorage.removeItem('user');
+      return null;
+    }
   },
   removeUser: () => localStorage.removeItem('user')
 };

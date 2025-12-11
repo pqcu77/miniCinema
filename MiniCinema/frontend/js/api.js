@@ -1,6 +1,37 @@
 const API_BASE_URL = 'http://localhost:8080';
 
 const api = {
+  // 通用 HTTP 方法
+  get: (url, params = {}) => {
+    // 构建查询字符串
+    const queryString = Object.entries(params)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+    const fullUrl = queryString ? `${API_BASE_URL}${url}?${queryString}` : `${API_BASE_URL}${url}`;
+
+    return fetch(fullUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    }).then(res => res.json());
+  },
+
+  post: (url, data = {}) => {
+    return fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json());
+  },
+
+  // 电影相关 - 搜索和推荐
+  searchMovies: (keyword = '', genre = '', page = 1, pageSize = 8) => {
+    return api.get('/api/movies/search', { keyword, genre, page, pageSize });
+  },
+
+  getRecommendedMovies: (limit = 8) => {
+    return api.get('/api/movies/recommend', { limit });
+  },
+
   // 用户相关
   login: (username, password) => {
     return fetch(`${API_BASE_URL}/user/login`, {
@@ -60,12 +91,7 @@ const api = {
   },
 
   getMovieDetail: (movieId) => {
-    return fetch(`${API_BASE_URL}/movie/${movieId}`)
-      .then(res => res.json());
-  },
-
-  searchMovies: (keyword) => {
-    return fetch(`${API_BASE_URL}/movie/search?keyword=${encodeURIComponent(keyword)}`)
+    return fetch(`${API_BASE_URL}/api/movies/${movieId}`)
       .then(res => res.json());
   },
 
