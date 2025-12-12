@@ -5,6 +5,20 @@ spring:
     url: jdbc:opengauss://172.26.85.122:5432/minicinema
     username: developer
     password: cinema@123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        # Use custom pagination via native query
+        use_sql_comments: false
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
@@ -13,9 +27,17 @@ spring:
     cache: false
   mvc:
     static-path-pattern: /static/**
+  http:
+    encoding:
+      charset: UTF-8
+      force: true
 
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
 
 mybatis:
   configuration:
