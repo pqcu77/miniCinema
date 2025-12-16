@@ -2,16 +2,13 @@ package com.cinema.minicinema.Mapper;
 
 import com.cinema.minicinema.dto.MovieSearchDTO;
 import com.cinema.minicinema.entity.Movie;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
-import java.util.Map;
 
 /**
- * MovieMapper 接口 - 所有实现已委托给 MovieMapperAdapter
- * 该适配器使用 MovieRepository (JPA) 的原生 SQL 查询实现所有方法
+ * MovieMapper 接口 - 实现已由 MovieMapperAdapter (Spring bean) 提供
  */
-@Mapper
 public interface MovieMapper {
 
     // 1. 根据ID查询电影
