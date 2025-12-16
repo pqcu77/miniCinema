@@ -10,6 +10,7 @@ public class UserDTO {
     private String email;
     private String phone;
     private String avatarUrl;
+    private String token;  // 登录令牌
     private LocalDateTime createTime;
     private LocalDateTime lastLoginTime;
 }

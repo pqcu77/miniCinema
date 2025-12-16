@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录测试 - MiniCinema</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: white;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #f23030;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #d12020;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 登录功能测试</h1>
+
+  <div class="test-section">
+    <h2>测试登录 API</h2>
+    <input type="text" id="username" placeholder="用户名" value="test">
+    <input type="password" id="password" placeholder="密码" value="test123">
+    <button onclick="testLogin()">测试登录</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>当前状态</h2>
+    <button onclick="checkLoginStatus()">检查登录状态</button>
+    <button onclick="clearStorage()">清除本地存储</button>
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    import api from './js/api.js';
+    import userState from './js/userState.js';
+    import { showMessage } from './js/utils.js';
+
+    console.log('测试页面模块加载成功');
+    console.log('API 对象:', api);
+    console.log('userState 对象:', userState);
+
+    // 挂载到 window 以便 onclick 调用
+    window.testLogin = async function() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const resultDiv = document.getElementById('result');
+
+      resultDiv.textContent = '正在登录...';
+
+      try {
+        console.log('调用 api.login...');
+        const response = await api.login(username, password);
+        console.log('登录响应:', response);
+
+        resultDiv.textContent = JSON.stringify(response, null, 2);
+
+        if (response.code === 1) {
+          console.log('登录成功，保存用户状态');
+          userState.setUser({
+            userId: response.data.userId,
+            username: response.data.username,
+            email: response.data.email,
+            token: response.data.token
+          });
+          showMessage('登录成功！', 'success');
+          checkLoginStatus();
+        } else {
+          showMessage('登录失败: ' + response.msg, 'error');
+        }
+      } catch (error) {
+        console.error('登录错误:', error);
+        resultDiv.textContent = '错误: ' + error.message;
+        showMessage('登录错误: ' + error.message, 'error');
+      }
+    };
+
+    window.checkLoginStatus = function() {
+      const statusDiv = document.getElementById('status');
+      const isLoggedIn = userState.isLoggedIn();
+      const user = userState.getUser();
+      const token = userState.getToken();
+
+      statusDiv.innerHTML = `
+        <h3>登录状态</h3>
+        <p><strong>是否登录:</strong> ${isLoggedIn ? '✅ 是' : '❌ 否'}</p>
+        <p><strong>用户信息:</strong></p>
+        <pre>${JSON.stringify(user, null, 2)}</pre>
+        <p><strong>Token:</strong> ${token ? token.substring(0, 20) + '...' : '无'}</p>
+      `;
+    };
+
+    window.clearStorage = function() {
+      localStorage.clear();
+      userState.clearUser();
+      showMessage('本地存储已清除', 'success');
+      checkLoginStatus();
+    };
+
+    // 页面加载时检查状态
+    checkLoginStatus();
+  </script>
+</body>
+</html>
+

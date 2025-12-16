@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录状态测试 - MiniCinema</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .test-container {
+      max-width: 800px;
+      margin: 100px auto;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+    }
+    .test-section {
+      margin: 2rem 0;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+    }
+    .test-info {
+      padding: 1rem;
+      background: rgba(52, 152, 219, 0.1);
+      border-left: 4px solid #3498db;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .test-success {
+      padding: 1rem;
+      background: rgba(46, 204, 113, 0.1);
+      border-left: 4px solid #2ecc71;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .test-error {
+      padding: 1rem;
+      background: rgba(231, 76, 60, 0.1);
+      border-left: 4px solid #e74c3c;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .btn-test {
+      padding: 0.75rem 1.5rem;
+      margin: 0.5rem;
+      background: linear-gradient(45deg, #3498db, #2ecc71);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    .btn-test:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1 class="logo">🎬 MiniCinema</h1>
+      <nav>
+        <a href="index.html">首页</a>
+        <a href="movies.html">电影</a>
+      </nav>
+      <div class="header-right">
+        <a href="login.html">登录</a>
+        <a href="register.html">注册</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="test-container">
+    <h1 style="text-align: center; margin-bottom: 2rem;">🔐 全局登录状态测试</h1>
+
+    <div class="test-section">
+      <h2>当前登录状态</h2>
+      <div id="loginStatus" class="test-info">检查中...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>用户信息</h2>
+      <pre id="userInfo">加载中...</pre>
+    </div>
+
+    <div class="test-section">
+      <h2>测试操作</h2>
+      <button class="btn-test" onclick="testLoginStatus()">🔍 检查登录状态</button>
+      <button class="btn-test" onclick="testGetUser()">👤 获取用户信息</button>
+      <button class="btn-test" onclick="testGetToken()">🔑 获取 Token</button>
+      <button class="btn-test" onclick="simulateLogin()">✅ 模拟登录</button>
+      <button class="btn-test" onclick="simulateLogout()">❌ 模拟退出</button>
+    </div>
+
+    <div class="test-section">
+      <h2>事件监听测试</h2>
+      <div id="eventLog" class="test-info">
+        <strong>事件日志:</strong>
+        <div id="eventMessages" style="margin-top: 0.5rem;"></div>
+      </div>
+      <button class="btn-test" onclick="clearEventLog()">🗑️ 清除日志</button>
+    </div>
+
+    <div class="test-section">
+      <h2>测试说明</h2>
+      <div class="test-info">
+        <h3>如何测试：</h3>
+        <ol>
+          <li>点击"检查登录状态"查看当前是否已登录</li>
+          <li>如果未登录，先去 <a href="login.html">登录页面</a> 登录</li>
+          <li>登录后返回此页面，状态应自动更新</li>
+          <li>尝试点击其他按钮测试各项功能</li>
+          <li>打开浏览器控制台查看详细日志</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import userState from './js/userState.js';
+    import eventBus from './js/eventBus.js';
+    import { showMessage } from './js/utils.js';
+
+    // 页面加载时检查登录状态
+    document.addEventListener('DOMContentLoaded', () => {
+      updateLoginStatus();
+      setupEventListeners();
+    });
+
+    // 更新登录状态显示
+    function updateLoginStatus() {
+      const statusDiv = document.getElementById('loginStatus');
+      const userInfoPre = document.getElementById('userInfo');
+
+      if (userState.isLoggedIn()) {
+        const user = userState.getUser();
+        statusDiv.className = 'test-success';
+        statusDiv.innerHTML = `
+          <strong>✅ 已登录</strong><br>
+          用户名: ${user.username}<br>
+          用户ID: ${user.userId}
+        `;
+        userInfoPre.textContent = JSON.stringify(user, null, 2);
+      } else {
+        statusDiv.className = 'test-error';
+        statusDiv.innerHTML = '<strong>❌ 未登录</strong><br>请先 <a href="login.html">登录</a>';
+        userInfoPre.textContent = '未登录，无用户信息';
+      }
+    }
+
+    // 设置事件监听器
+    function setupEventListeners() {
+      eventBus.on('userLogin', (user) => {
+        addEventLog('🎉 用户登录事件触发', user);
+        updateLoginStatus();
+      });
+
+      eventBus.on('userLogout', () => {
+        addEventLog('👋 用户退出事件触发', null);
+        updateLoginStatus();
+      });
+
+      eventBus.on('userUpdated', (user) => {
+        addEventLog('🔄 用户信息更新事件触发', user);
+        updateLoginStatus();
+      });
+    }
+
+    // 添加事件日志
+    function addEventLog(message, data) {
+      const messagesDiv = document.getElementById('eventMessages');
+      const time = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.style.marginTop = '0.5rem';
+      logEntry.style.padding = '0.5rem';
+      logEntry.style.background = 'rgba(255, 255, 255, 0.05)';
+      logEntry.style.borderRadius = '4px';
+      logEntry.innerHTML = `
+        <strong>${time}</strong> - ${message}
+        ${data ? `<pre style="margin-top: 0.25rem;">${JSON.stringify(data, null, 2)}</pre>` : ''}
+      `;
+      messagesDiv.insertBefore(logEntry, messagesDiv.firstChild);
+    }
+
+    // 测试函数
+    window.testLoginStatus = () => {
+      const isLoggedIn = userState.isLoggedIn();
+      showMessage(
+        `登录状态: ${isLoggedIn ? '已登录 ✅' : '未登录 ❌'}`,
+        isLoggedIn ? 'success' : 'error'
+      );
+      updateLoginStatus();
+    };
+
+    window.testGetUser = () => {
+      const user = userState.getUser();
+      if (user) {
+        console.log('用户信息:', user);
+        showMessage(`用户: ${user.username}`, 'success');
+      } else {
+        showMessage('未登录', 'error');
+      }
+    };
+
+    window.testGetToken = () => {
+      const token = userState.getToken();
+      if (token) {
+        console.log('Token:', token);
+        showMessage('Token 已获取（查看控制台）', 'success');
+      } else {
+        showMessage('未登录，无 Token', 'error');
+      }
+    };
+
+    window.simulateLogin = () => {
+      // 模拟登录（仅用于测试）
+      const mockUser = {
+        userId: 999,
+        username: '测试用户',
+        email: 'test@test.com',
+        token: 'mock-token-' + Date.now()
+      };
+      userState.setUser(mockUser);
+      showMessage('模拟登录成功！', 'success');
+    };
+
+    window.simulateLogout = () => {
+      userState.clearUser();
+      showMessage('已退出登录', 'success');
+    };
+
+    window.clearEventLog = () => {
+      document.getElementById('eventMessages').innerHTML = '';
+      showMessage('日志已清除', 'success');
+    };
+  </script>
+
+  <script type="module" src="js/utils.js"></script>
+</body>
+</html>
+

@@ -1,3 +1,8 @@
+import userState from '../userState.js';
+import eventBus from '../eventBus.js';
+import api from '../api.js';
+import { showMessage } from '../utils.js';
+
 let currentPage = 1;
 const pageSize = 12;
 let currentSearchParams = {
@@ -9,6 +14,15 @@ let currentSearchParams = {
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     loadMovies();
+
+    // 监听登录/退出事件，更新页面状态
+    eventBus.on('userLogin', () => {
+        console.log('用户已登录，刷新电影列表');
+    });
+
+    eventBus.on('userLogout', () => {
+        console.log('用户已退出，刷新电影列表');
+    });
 });
 
 // 加载电影列表
@@ -22,24 +36,25 @@ async function loadMovies() {
     emptyState.style.display = 'none';
 
     try {
-        // 调用后端API - 分页获取电影列表
-        const response = await api.get('/api/movies/list', {
+        console.log('正在加载电影列表...', { page: currentPage, pageSize: pageSize });
+        const response = await api.get('/api/movies', {
             page: currentPage,
             pageSize: pageSize
         });
 
+        console.log('API 响应:', response);
         loadingDiv.style.display = 'none';
 
-        // 检查后端返回的 code 字段（1=成功，0=失败）
         if (response.code === 1 && response.data && response.data.records && response.data.records.length > 0) {
+            console.log('成功加载', response.data.records.length, '部电影');
             response.data.records.forEach(movie => {
                 const movieCard = createMovieCard(movie);
                 moviesGrid.appendChild(movieCard);
             });
 
-            // 渲染分页
-            renderPagination(response.data.total);
+            renderPagination(response.data.total, response.data.totalPages);
         } else {
+            console.warn('没有电影数据或响应格式错误:', response);
             emptyState.style.display = 'block';
             document.getElementById('pagination').innerHTML = '';
         }
@@ -47,6 +62,7 @@ async function loadMovies() {
         loadingDiv.style.display = 'none';
         emptyState.style.display = 'block';
         console.error('加载电影失败:', error);
+        showMessage('加载电影失败: ' + error.message, 'error');
     }
 }
 
@@ -113,7 +129,6 @@ async function searchMovies() {
     emptyState.style.display = 'none';
 
     try {
-        // 调用搜索接口
         const response = await api.searchMovies(
             currentSearchParams.keyword,
             currentSearchParams.genre,
@@ -128,7 +143,7 @@ async function searchMovies() {
                 const movieCard = createMovieCard(movie);
                 moviesGrid.appendChild(movieCard);
             });
-            renderPagination(response.data.total);
+            renderPagination(response.data.total, response.data.totalPages);
         } else {
             emptyState.style.display = 'block';
             document.getElementById('pagination').innerHTML = '';
@@ -142,7 +157,7 @@ async function searchMovies() {
     }
 }
 
-// 获取推荐电影
+// 推荐列表载入（按钮触发）
 async function loadRecommendedMovies() {
     const moviesGrid = document.getElementById('moviesGrid');
     const loadingDiv = document.getElementById('loadingDiv');
@@ -153,103 +168,54 @@ async function loadRecommendedMovies() {
     emptyState.style.display = 'none';
 
     try {
-        const response = await api.getRecommendedMovies(pageSize);
-
+        const resp = await api.getRecommendedMovies(pageSize);
         loadingDiv.style.display = 'none';
-
-        if (response.code === 1 && response.data && response.data.records && response.data.records.length > 0) {
-            response.data.records.forEach(movie => {
-                const movieCard = createMovieCard(movie);
-                moviesGrid.appendChild(movieCard);
+        if (resp.code === 1 && resp.data && resp.data.length) {
+            resp.data.forEach(movie => {
+                moviesGrid.appendChild(createMovieCard(movie));
             });
-            document.getElementById('pagination').innerHTML = '';
         } else {
             emptyState.style.display = 'block';
-            document.getElementById('pagination').innerHTML = '';
+            showMessage('获取推荐失败或者无推荐', 'info');
         }
-    } catch (error) {
+    } catch (e) {
         loadingDiv.style.display = 'none';
         emptyState.style.display = 'block';
-        console.error('加载推荐电影失败:', error);
+        console.error('获取推荐失败', e);
+        showMessage('获取推荐失败', 'error');
     }
 }
 
-// 渲染分页
-function renderPagination(total) {
+function renderPagination(total, totalPages = Math.ceil(total / pageSize)) {
     const pagination = document.getElementById('pagination');
     pagination.innerHTML = '';
 
-    const totalPages = Math.ceil(total / pageSize);
+    if (total <= pageSize) {
+        return;
+    }
 
-    if (totalPages <= 1) return;
-
-    // 上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.textContent = '上一页';
     prevBtn.disabled = currentPage === 1;
     prevBtn.onclick = () => {
         if (currentPage > 1) {
             currentPage--;
-            loadMovies();
+            currentSearchParams.keyword ? searchMovies() : loadMovies();
         }
     };
     pagination.appendChild(prevBtn);
 
-    // 页码
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
+    const pageInfo = document.createElement('span');
+    pageInfo.textContent = `${currentPage} / ${Math.max(totalPages, 1)}`;
+    pagination.appendChild(pageInfo);
 
-    if (startPage > 1) {
-        const firstBtn = document.createElement('button');
-        firstBtn.textContent = '1';
-        firstBtn.onclick = () => {
-            currentPage = 1;
-            loadMovies();
-        };
-        pagination.appendChild(firstBtn);
-
-        if (startPage > 2) {
-            const dots = document.createElement('span');
-            dots.textContent = '...';
-            pagination.appendChild(dots);
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.className = i === currentPage ? 'active' : '';
-        btn.onclick = () => {
-            currentPage = i;
-            loadMovies();
-        };
-        pagination.appendChild(btn);
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            const dots = document.createElement('span');
-            dots.textContent = '...';
-            pagination.appendChild(dots);
-        }
-
-        const lastBtn = document.createElement('button');
-        lastBtn.textContent = totalPages;
-        lastBtn.onclick = () => {
-            currentPage = totalPages;
-            loadMovies();
-        };
-        pagination.appendChild(lastBtn);
-    }
-
-    // 下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.textContent = '下一页';
-    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.disabled = currentPage >= totalPages;
     nextBtn.onclick = () => {
         if (currentPage < totalPages) {
             currentPage++;
-            loadMovies();
+            currentSearchParams.keyword ? searchMovies() : loadMovies();
         }
     };
     pagination.appendChild(nextBtn);
@@ -272,3 +238,12 @@ function logout() {
     localStorage.removeItem('user');
     window.location.href = 'login.html';
 }
+
+// 导出给 HTML 全局使用
+window.searchMovies = searchMovies;
+window.loadMovies = loadMovies;
+window.loadRecommendedMovies = loadRecommendedMovies;
+window.goToDetail = goToDetail;
+window.bookTicket = bookTicket;
+window.logout = logout;
+
