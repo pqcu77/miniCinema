@@ -2,9 +2,25 @@
 spring:
   datasource:
     driver-class-name: org.opengauss.Driver
-    url: jdbc:opengauss://172.26.85.122:5432/minicinema
+    url: jdbc:opengauss://172.26.63.231:5432/minicinema
     username: developer
     password: cinema@123
+
+
+  # 添加 Redis 配置
+  redis:
+    host: localhost      # 或者 127.0.0.1
+    port: 6379
+    password:            # 默认没有密码，留空即可
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
   jpa:
     hibernate:
       ddl-auto: update

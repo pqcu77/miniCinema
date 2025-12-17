@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cinema.minicinema.Mapper.ScreeningMapper">
+
+    <select id="selectDetailById" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningDetailVO">
+        SELECT 
+            s.screening_id,
+            s.movie_id,
+            s.cinema_id,
+            s.hall_id,
+            m.title AS movie_title,
+            c.name AS cinema_name,
+            h.hall_name AS hall_name,
+            s.screen_time,
+            s.price,
+            s.video_type,
+            s.available_seats
+        FROM screenings s
+        LEFT JOIN movies m ON s.movie_id = m.movie_id
+        LEFT JOIN cinemas c ON s.cinema_id = c.cinema_id
+        LEFT JOIN halls h ON s.hall_id = h.hall_id
+        WHERE s.screening_id = #{screeningId}
+    </select>
+
+</mapper>
