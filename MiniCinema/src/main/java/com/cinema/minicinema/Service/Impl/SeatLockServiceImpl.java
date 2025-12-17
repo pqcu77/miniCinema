@@ -36,7 +36,7 @@ public class SeatLockServiceImpl implements SeatLockService {
 
     @Override
     public ScreeningSeatDTO getScreeningSeats(Integer screeningId, Integer userId) {
-        ScreeningMapper.ScreeningDetailVO screening = screeningMapper.selectDetailById(screeningId);
+        ScreeningDetailDTO screening = screeningMapper.selectDetailById(screeningId);
         if (screening == null) {
             throw new BusinessException("场次不存在");
         }

@@ -3,6 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cinema.minicinema.Mapper.ScreeningMapper">
 
+    <!--
     <select id="selectDetailById" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningDetailVO">
         SELECT 
             s.screening_id,
@@ -21,6 +22,95 @@
         LEFT JOIN cinemas c ON s.cinema_id = c.cinema_id
         LEFT JOIN halls h ON s.hall_id = h.hall_id
         WHERE s.screening_id = #{screeningId}
+    </select>-->
+
+    <!-- ========== 新增的查询 ========== -->
+    
+    <!-- 查询某电影在某影院的所有场次 -->
+    <select id="selectByMovieIdAndCinema" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningItem">
+        SELECT 
+            s.screening_id,
+            s.movie_id,
+            s.cinema_id,
+            s.hall_id,
+            h.hall_name,
+            s.screen_time,
+            s.price,
+            s.video_type,
+            s.available_seats,
+            CASE 
+                WHEN s.screen_time &lt; NOW() - INTERVAL '2 hours' THEN '已结束'
+                WHEN s.screen_time &lt; NOW() THEN '已开场'
+                WHEN s.screen_time &lt; NOW() + INTERVAL '30 minutes' THEN '即将开场'
+                ELSE '可售'
+            END AS status
+        FROM screenings s
+        LEFT JOIN halls h ON s.hall_id = h.hall_id
+        WHERE s.movie_id = #{movieId}
+        AND s.cinema_id = #{cinemaId}
+        <if test="startDate != null">
+            AND s.screen_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.screen_time &lt;= #{endDate}::date + interval '1 day'
+        </if>
+        ORDER BY s.screen_time ASC
+    </select>
+
+    <!-- 查询场次详细信息 -->
+    <select id="selectDetailById" resultType="com.cinema.minicinema.dto.ScreeningDetailDTO">
+        SELECT 
+            s.screening_id,
+            s.screen_time,
+            s.price,
+            s.video_type,
+            s.available_seats,
+            m.movie_id,
+            m.title AS movie_title,
+            m.poster_url,
+            m.duration,
+            m.genre,
+            m.director,
+            m.actors,
+            m.description,
+            c.cinema_id,
+            c.name AS cinema_name,
+            c.address,
+            h.hall_id,
+            h.hall_name,
+            h.total_seats
+        FROM screenings s
+        LEFT JOIN movies m ON s.movie_id = m.movie_id
+        LEFT JOIN cinemas c ON s.cinema_id = c.cinema_id
+        LEFT JOIN halls h ON s.hall_id = h.hall_id
+        WHERE s.screening_id = #{screeningId}
+    </select>
+
+    <!-- 查询某影院在某日的所有场次 -->
+    <select id="selectByCinemaAndDate" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningItem">
+        SELECT 
+            s.screening_id,
+            s.movie_id,
+            s.cinema_id,
+            s.hall_id,
+            h.hall_name,
+            s.screen_time,
+            s.price,
+            s.video_type,
+            s.available_seats,
+            CASE 
+                WHEN s.screen_time &lt; NOW() - INTERVAL '2 hours' THEN '已结束'
+                WHEN s.screen_time &lt; NOW() THEN '已开场'
+                WHEN s.screen_time &lt; NOW() + INTERVAL '30 minutes' THEN '即将开场'
+                ELSE '可售'
+            END AS status
+        FROM screenings s
+        LEFT JOIN halls h ON s.hall_id = h.hall_id
+        WHERE s.cinema_id = #{cinemaId}
+        
+        AND s.screen_time >= #{scheduleDate}::timestamp  <!-- ✅ >= 当天 00:00:00 -->
+        AND s.screen_time &lt; (#{scheduleDate}::timestamp + INTERVAL '1 day')  <!-- ✅ < 次日 00:00:00 -->
+        ORDER BY s.screen_time ASC
     </select>
 
 </mapper>
