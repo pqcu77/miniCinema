@@ -1,14 +1,17 @@
 package com.cinema.minicinema.Controller;
 
+import com.cinema.minicinema.Service.MovieCommentService;
 import com.cinema.minicinema.Service.MovieRecommendService;
 import com.cinema.minicinema.Service.MovieSearchService;
 import com.cinema.minicinema.entity.Movie;
+import com.cinema.minicinema.entity.MovieComment;
 import com.cinema.minicinema.Mapper.UserHistoryMapper;
 import com.cinema.minicinema.Repository.MovieRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,6 +36,9 @@ public class MovieController {
 
     @Autowired
     private MovieRepository movieRepository;
+
+    @Autowired
+    private MovieCommentService movieCommentService;
 
 
     /**
@@ -66,15 +72,12 @@ public class MovieController {
     }
 
     /**
-     * 记录用户观看电影的行为
-     * @param userId 用户ID
-     * @param movieId 电影ID
-     * @param watchDuration 观看时长（秒）
+     * 记录用户观看电影的行为（REST: POST /api/movies/{movieId}/history）
      */
-    @PostMapping("/history")
+    @PostMapping("/{movieId}/history")
     public Map<String, Object> recordMovieHistory(
+            @PathVariable Long movieId,
             @RequestParam Long userId,
-            @RequestParam Long movieId,
             @RequestParam(defaultValue = "0") Integer watchDuration) {
 
         log.info("记录观看: userId={}, movieId={}, watchDuration={}", userId, movieId, watchDuration);
@@ -121,121 +124,71 @@ public class MovieController {
     }
 
     /**
-     * 分页获取电影列表
-     * @param page 页码（从1开始）
-     * @param pageSize 每页大小
+     * 查询电影列表（支持 keyword/genre 搜索） -> GET /api/movies
      */
-    @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-    public Map<String, Object> listMovies(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "8") int pageSize) {
-
-        log.info("获取电影列表: page={}, pageSize={}", page, pageSize);
-
-        try {
-            // 使用原生 SQL 查询以兼容 GaussDB 的 OFFSET/LIMIT 语法
-            int offset = Math.max(0, (page - 1) * pageSize);
-            List<Movie> movies = movieRepository.findMoviesPaginated(pageSize, offset);
-
-            // 获取总数
-            long total = movieRepository.count();
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", 1);
-            result.put("msg", "success");
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("records", movies);
-            data.put("total", total);
-            data.put("page", page);
-            data.put("pageSize", pageSize);
-            data.put("totalPages", (total + pageSize - 1) / pageSize);
-
-            result.put("data", data);
-
-            return result;
-        } catch (Exception e) {
-            log.error("获取电影列表失败: {}", e.getMessage(), e);
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", 0);
-            result.put("msg", "获取列表失败：" + e.getMessage());
-            result.put("data", null);
-
-            return result;
-        }
-    }
-
-    /**
-     * 搜索电影
-     * @param keyword 搜索关键词
-     * @param genre 电影类型
-     * @param page 页码
-     * @param pageSize 每页大小
-     */
-    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-    public Map<String, Object> searchMovies(
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public Map<String, Object> queryMovies(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "") String genre,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "8") int pageSize) {
 
-        log.info("搜索电影: keyword={}, genre={}, page={}, pageSize={}", keyword, genre, page, pageSize);
+        log.info("查询电影: keyword={}, genre={}, page={}, pageSize={}", keyword, genre, page, pageSize);
 
         try {
-            List<Movie> allMovies = new ArrayList<>();
+            Map<String, Object> result = new HashMap<>();
+            Map<String, Object> data = new HashMap<>();
 
-            // 根据搜索条件调用不同的查询方法
-            if (!keyword.isEmpty() && !genre.isEmpty()) {
-                // 同时按关键词和类型搜索 - 先搜索关键词，再过滤类型
-                List<Movie> keywordResults = movieRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
-                allMovies = keywordResults.stream()
-                        .filter(m -> m.getGenre() != null && m.getGenre().toUpperCase().contains(genre.toUpperCase()))
-                        .collect(Collectors.toList());
-            } else if (!keyword.isEmpty()) {
-                // 只按关键词搜索
-                allMovies = movieRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
-            } else if (!genre.isEmpty()) {
-                // 只按类型搜索
-                allMovies = movieRepository.findByGenreContainingIgnoreCase(genre);
+            boolean hasKeyword = StringUtils.hasText(keyword);
+            boolean hasGenre = StringUtils.hasText(genre);
+
+            if (!hasKeyword && !hasGenre) {
+                int offset = Math.max(0, (page - 1) * pageSize);
+                List<Movie> movies = movieRepository.findMoviesPaginated(pageSize, offset);
+                long total = movieRepository.count();
+
+                data.put("records", movies);
+                data.put("total", total);
             } else {
-                // 都为空，返回所有电影
-                allMovies = movieRepository.findAll();
+                List<Movie> allMovies = movieRepository
+                        .findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+
+                if (hasGenre) {
+                    allMovies = allMovies.stream()
+                            .filter(m -> m.getGenre() != null && m.getGenre().toLowerCase().contains(genre.toLowerCase()))
+                            .collect(Collectors.toList());
+                }
+
+                allMovies.sort((a, b) -> {
+                    if (a.getRating() == null || b.getRating() == null) return 0;
+                    return b.getRating().compareTo(a.getRating());
+                });
+
+                int offset = Math.max(0, (page - 1) * pageSize);
+                List<Movie> pagedMovies = allMovies.stream()
+                        .skip(offset)
+                        .limit(pageSize)
+                        .collect(Collectors.toList());
+
+                data.put("records", pagedMovies);
+                data.put("total", allMovies.size());
             }
 
-            // 按评分排序
-            allMovies.sort((a, b) -> {
-                if (a.getRating() == null || b.getRating() == null) return 0;
-                return b.getRating().compareTo(a.getRating());
-            });
-
-            // 分页处理
-            int offset = Math.max(0, (page - 1) * pageSize);
-            List<Movie> pagedMovies = allMovies.stream()
-                    .skip(offset)
-                    .limit(pageSize)
-                    .collect(Collectors.toList());
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", 1);
-            result.put("msg", "success");
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("records", pagedMovies);
-            data.put("total", allMovies.size());
             data.put("page", page);
             data.put("pageSize", pageSize);
-            data.put("totalPages", (allMovies.size() + pageSize - 1) / pageSize);
+            long total = ((Number) data.get("total")).longValue();
+            data.put("totalPages", (total + pageSize - 1) / pageSize);
 
+            result.put("code", 1);
+            result.put("msg", "success");
             result.put("data", data);
-
             return result;
         } catch (Exception e) {
-            log.error("搜索电影失败: {}", e.getMessage(), e);
+            log.error("查询电影失败: {}", e.getMessage(), e);
             Map<String, Object> result = new HashMap<>();
             result.put("code", 0);
-            result.put("msg", "搜索失败：" + e.getMessage());
+            result.put("msg", "获取列表失败：" + e.getMessage());
             result.put("data", null);
-
             return result;
         }
     }
@@ -271,6 +224,98 @@ public class MovieController {
             result.put("msg", "获取推荐失败：" + e.getMessage());
             result.put("data", null);
 
+            return result;
+        }
+    }
+
+    /**
+     * 获取单个电影详情 -> GET /api/movies/{movieId}
+     */
+    @GetMapping(value = "/{movieId}", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public Map<String, Object> getMovieDetail(@PathVariable Integer movieId) {
+        log.info("获取电影详情: movieId={}", movieId);
+
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Optional<Movie> optionalMovie = movieRepository.findById(movieId);
+            if (!optionalMovie.isPresent()) {
+                result.put("code", 0);
+                result.put("msg", "电影不存在");
+                result.put("data", null);
+                return result;
+            }
+
+            result.put("code", 1);
+            result.put("msg", "success");
+            result.put("data", optionalMovie.get());
+            return result;
+        } catch (Exception e) {
+            log.error("获取电影详情失败: movieId={}, error={}", movieId, e.getMessage(), e);
+            result.put("code", 0);
+            result.put("msg", "获取电影详情失败：" + e.getMessage());
+            result.put("data", null);
+            return result;
+        }
+    }
+
+    /**
+     * 获取电影评论 -> GET /api/movies/{movieId}/comments
+     */
+    @GetMapping(value = "/{movieId}/comments", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public Map<String, Object> getMovieComments(@PathVariable Integer movieId) {
+        log.info("获取电影评论: movieId={}", movieId);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<MovieComment> comments = movieCommentService.getComments(movieId);
+            result.put("code", 1);
+            result.put("msg", "success");
+            result.put("data", comments);
+            return result;
+        } catch (Exception e) {
+            log.error("获取电影评论失败: movieId={}, error={}", movieId, e.getMessage(), e);
+            result.put("code", 0);
+            result.put("msg", "获取评论失败：" + e.getMessage());
+            result.put("data", null);
+            return result;
+        }
+    }
+
+    /**
+     * 提交电影评论 -> POST /api/movies/{movieId}/comments
+     */
+    @PostMapping(value = "/{movieId}/comments", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public Map<String, Object> addMovieComment(
+            @PathVariable Integer movieId,
+            @RequestBody Map<String, Object> payload) {
+
+        Long userId = payload.get("userId") != null ? Long.valueOf(payload.get("userId").toString()) : null;
+        String content = payload.get("content") != null ? payload.get("content").toString() : null;
+        String ratingStr = payload.get("rating") != null ? payload.get("rating").toString() : null;
+
+        log.info("提交电影评论: movieId={}, userId={}", movieId, userId);
+
+        Map<String, Object> result = new HashMap<>();
+        try {
+            if (userId == null || !StringUtils.hasText(content)) {
+                throw new IllegalArgumentException("用户ID和评论内容不能为空");
+            }
+
+            java.math.BigDecimal rating = null;
+            if (StringUtils.hasText(ratingStr)) {
+                rating = new java.math.BigDecimal(ratingStr);
+            }
+
+            MovieComment saved = movieCommentService.addComment(userId, movieId, content, rating);
+
+            result.put("code", 1);
+            result.put("msg", "success");
+            result.put("data", saved);
+            return result;
+        } catch (Exception e) {
+            log.error("提交电影评论失败: movieId={}, error={}", movieId, e.getMessage(), e);
+            result.put("code", 0);
+            result.put("msg", "提交评论失败：" + e.getMessage());
+            result.put("data", null);
             return result;
         }
     }

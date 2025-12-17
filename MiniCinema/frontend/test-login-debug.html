@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录测试 - MiniCinema</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #666;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #f23030;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #d62828;
+    }
+    .log {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 3px 0;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 登录功能测试</h1>
+
+    <form id="testLoginForm">
+      <div class="form-group">
+        <label for="username">用户名:</label>
+        <input type="text" id="username" name="username" value="test" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">密码:</label>
+        <input type="password" id="password" name="password" value="123456" required>
+      </div>
+
+      <button type="submit">测试登录</button>
+    </form>
+
+    <div class="log">
+      <div class="log-entry info">等待测试...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import userState from './js/userState.js';
+    import api from './js/api.js';
+
+    const logContainer = document.querySelector('.log');
+
+    function addLog(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    addLog('✅ 页面加载完成', 'success');
+    addLog('📝 当前登录状态: ' + (userState.isLoggedIn() ? '已登录' : '未登录'), 'info');
+
+    document.getElementById('testLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      addLog(`🔄 开始测试登录: username=${username}`, 'info');
+
+      try {
+        addLog('📡 调用后端 API: POST /user/login', 'info');
+        const response = await api.login(username, password);
+
+        addLog('📥 收到响应: ' + JSON.stringify(response), 'info');
+
+        if (response.code === 1 && response.data) {
+          addLog('✅ 登录成功！', 'success');
+          addLog('💾 保存用户信息...', 'info');
+
+          const userData = {
+            userId: response.data.userId,
+            username: response.data.username,
+            email: response.data.email || '',
+            token: response.data.token
+          };
+
+          userState.setUser(userData);
+
+          addLog('✔️ 用户信息已保存到 userState', 'success');
+          addLog('✔️ 登录状态: ' + userState.isLoggedIn(), 'success');
+          addLog('✔️ 用户名: ' + userState.getUsername(), 'success');
+
+          // 检查 localStorage
+          const storedUser = localStorage.getItem('userInfo');
+          const storedToken = localStorage.getItem('token');
+          addLog('💾 localStorage - userInfo: ' + (storedUser ? '已保存' : '未保存'), storedUser ? 'success' : 'error');
+          addLog('💾 localStorage - token: ' + (storedToken ? '已保存' : '未保存'), storedToken ? 'success' : 'error');
+
+          addLog('🎉 登录测试完成！3秒后跳转到电影列表页...', 'success');
+
+          setTimeout(() => {
+            window.location.href = 'movies.html';
+          }, 3000);
+
+        } else {
+          addLog('❌ 登录失败: ' + response.msg, 'error');
+        }
+
+      } catch (error) {
+        addLog('❌ 请求错误: ' + error.message, 'error');
+        console.error('登录错误:', error);
+      }
+    });
+  </script>
+</body>
+</html>
+

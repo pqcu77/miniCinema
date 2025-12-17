@@ -38,7 +38,7 @@ public interface UserHistoryMapper {
     /**
      * 记录用户观看电影的历史
      */
-    @Insert("INSERT INTO user_history (user_id, movie_id, view_time, watch_duration) " +
+    @Insert("INSERT INTO user_history (user_id, movie_id, created_at, watch_duration) " +
             "VALUES (#{userId}, #{movieId}, #{viewTime}, #{watchDuration})")
     void recordUserHistory(@Param("userId") Long userId,
                           @Param("movieId") Long movieId,

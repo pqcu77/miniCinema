@@ -157,6 +157,12 @@ public class UserServiceImpl implements UserService {
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         BeanUtils.copyProperties(user, dto);
+        
+        // 生成简单的 token (用户ID + 时间戳的MD5)
+        String tokenSource = user.getUserId() + "_" + System.currentTimeMillis();
+        String token = DigestUtils.md5DigestAsHex(tokenSource.getBytes(StandardCharsets.UTF_8));
+        dto.setToken(token);
+        
         return dto;
     }
 }
