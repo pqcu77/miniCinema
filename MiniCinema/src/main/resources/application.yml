@@ -2,23 +2,58 @@
 spring:
   datasource:
     driver-class-name: org.opengauss.Driver
-    url: jdbc:opengauss://localhost:5432/minicinema
+    url: jdbc:opengauss://172.26.63.231:5432/minicinema
     username: developer
     password: cinema@123
-  mvc:
-    static-path-pattern: /static/**
-    view:
-      prefix: /templates/
-      suffix: .html
+
+
+  # 添加 Redis 配置
+  redis:
+    host: localhost      # 或者 127.0.0.1
+    port: 6379
+    password:            # 默认没有密码，留空即可
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        # Use custom pagination via native query
+        use_sql_comments: false
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
-    enabled: true
-    mode: HTML5
+    mode: HTML
     encoding: UTF-8
+    cache: false
+  mvc:
+    static-path-pattern: /static/**
+  http:
+    encoding:
+      charset: UTF-8
+      force: true
 
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
 
 mybatis:
   configuration:
@@ -29,5 +64,3 @@ mybatis:
 logging:
   level:
     com.maoyan: debug
-
-
