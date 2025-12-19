@@ -139,7 +139,15 @@ async function handleToggleFavorite() {
 }
 
 function handleBuyTicket() {
-    showMessage('购票功能开发中...', 'success');
+    //showMessage('购票功能开发中...', 'success');
+    // 检查电影ID
+    if (!movieId) {
+        showMessage('电影信息错误', 'error');
+        return;
+    }
+    
+    // 跳转到场次列表页面
+    window.location.href = `movie-screenings.html?movieId=${movieId}`;
 }
 
 async function loadRecommendations(movieId, userId) {

@@ -819,3 +819,862 @@ header {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(242, 48, 48, 0.8);
 }
+
+
+/* ==================== 场次列表页面样式 ==================== */
+
+/* 电影信息横幅 - 基础样式 */
+.movie-banner {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.15), rgba(255, 107, 107, 0.15));
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    align-items: center;
+}
+
+/* 电影信息横幅 - 居中布局 */
+.movie-banner.centered {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2.5rem;
+}
+
+/* 海报样式 */
+.screening-movie-poster {
+    width: 150px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.screening-movie-poster:hover {
+    transform: scale(1.05);
+}
+
+.movie-banner.centered .screening-movie-poster {
+    width: 200px;
+    height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+/* 电影简介 */
+.movie-brief {
+    flex: 1;
+}
+
+.movie-banner.centered .movie-brief {
+    max-width: 600px;
+}
+
+.movie-brief h2 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 场次区域 - 增加上边距 */
+.screenings-section {
+    margin-top: 3rem;
+}
+
+/* 标题栏 - 左右布局 */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.section-title {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* 日期选择器 */
+/* ==================== 日期选择器（输入框版本）==================== */
+
+.date-selector-input {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.date-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.date-nav-btn:active {
+    transform: scale(0.95);
+}
+
+/* 日期输入框容器 */
+.date-input-wrapper {
+    position: relative;
+    min-width: 220px;
+    height: 46px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 23px;
+    padding: 0 1rem 0 2.8rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.date-input-wrapper:hover {
+    border-color: rgba(108, 99, 255, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.2);
+}
+
+.date-input-wrapper:focus-within {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+/* 日期图标 */
+.date-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 原生日期输入框 */
+.date-input-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 3;
+}
+
+/* 日期显示文本 */
+.date-text {
+    flex: 1;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 当输入框有值时的样式 */
+.date-input-field:not([value=""]) ~ .date-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 移除旧的日期选择器样式 */
+.date-selector,
+.date-picker-wrapper,
+.date-picker-input,
+.date-display,
+.date-label-main,
+.date-week-sub {
+    display: none !important;
+}
+
+/* 影院导航栏容器（带滚动） */
+.cinema-tabs-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+/* 影院滚动按钮 */
+.cinema-scroll-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    flex-shrink: 0;
+    z-index: 10;
+
+    /* ✅ 让箭头在圆圈中完全居中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.cinema-scroll-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.cinema-scroll-btn:active {
+    transform: scale(0.95);
+}
+
+.cinema-scroll-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 影院标签容器 */
+.cinema-tabs {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    flex: 1;
+    padding: 0.5rem 0;
+}
+
+/* 隐藏滚动条 */
+.cinema-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+/* 当影院数量少于7个时，允许换行 */
+.cinema-tabs.no-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+}
+
+.cinema-tab {
+    padding: 0.8rem 1.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cinema-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.cinema-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+}
+
+/* 影院信息区域 */
+.cinema-info {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cinema-info h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.cinema-address {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+/* 场次列表 */
+.screenings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* 场次行 */
+.screening-row {
+    display: flex;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.screening-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.2);
+}
+
+/* 时间列 */
+.screening-time-col {
+    min-width: 100px;
+    text-align: center;
+}
+
+.time-main {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ff6b6b;
+    line-height: 1;
+}
+
+.time-date {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.3rem;
+}
+
+/* 影厅列 */
+.screening-hall-col {
+    flex: 1;
+    padding: 0 1.5rem;
+}
+
+.hall-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.video-type {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(108, 99, 255, 0.2);
+    padding: 0.2rem 0.8rem;
+    border-radius: 12px;
+    display: inline-block;
+    border: 1px solid rgba(108, 99, 255, 0.3);
+}
+
+/* 价格列 */
+.screening-price-col {
+    min-width: 80px;
+    text-align: center;
+    color: #ff6b6b;
+}
+
+.price-symbol {
+    font-size: 0.9rem;
+}
+
+.price-amount {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+/* 座位信息列 */
+.screening-seats-col {
+    min-width: 100px;
+    text-align: center;
+}
+
+.seats-info {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* 操作列 */
+.screening-action-col {
+    min-width: 120px;
+    text-align: center;
+}
+
+.buy-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.8rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+}
+
+.buy-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+.buy-btn:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 无数据提示 */
+.no-data {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 3rem;
+    font-size: 1.1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .date-selector {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 768px) {
+    .movie-banner.centered .screening-movie-poster {
+        width: 150px;
+        height: 220px;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .date-options {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .cinema-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.5rem;
+    }
+    
+    .cinema-tab {
+        white-space: nowrap;
+    }
+    
+    .screening-row {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+    
+    .screening-time-col,
+    .screening-hall-col,
+    .screening-price-col,
+    .screening-seats-col,
+    .screening-action-col {
+        min-width: auto;
+        width: 100%;
+        padding: 0;
+    }
+    
+    .screening-hall-col {
+        padding: 0.5rem 0;
+    }
+}
+
+/* ===== Flatpickr 自定义样式 ===== */
+.flatpickr-calendar {
+    background: rgba(26, 26, 46, 0.95) !important;
+    border: 1px solid rgba(108, 99, 255, 0.3) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 16px !important;
+}
+
+.flatpickr-months {
+    background: transparent !important;
+}
+
+.flatpickr-current-month {
+    color: white !important;
+}
+
+.flatpickr-day {
+    color: rgba(255, 255, 255, 0.7) !important;
+    border-radius: 8px !important;
+}
+
+.flatpickr-day:hover {
+    background: rgba(108, 99, 255, 0.2) !important;
+    color: white !important;
+}
+
+.flatpickr-day.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.flatpickr-day.today {
+    border-color: #667eea !important;
+}
+
+.flatpickr-day.disabled {
+    color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 隐藏原生日期选择器的图标 */
+.date-input-field::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+.date-input-field::-moz-calendar-picker-indicator {
+    display: none;
+}
+
+
+/* ==================== 影院详情弹窗 ==================== */
+
+/* 遮罩层 */
+.cinema-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 弹窗主体 */
+.cinema-modal {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(22, 33, 62, 0.98));
+    border: 1px solid rgba(108, 99, 255, 0.3);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideInUp 0.4s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 弹窗头部 */
+.cinema-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: rgba(108, 99, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cinema-modal-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.cinema-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cinema-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+/* 弹窗主体内容 */
+.cinema-modal-body {
+    padding: 2rem;
+    max-height: calc(80vh - 160px);
+    overflow-y: auto;
+}
+
+.cinema-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cinema-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(108, 99, 255, 0.5);
+    border-radius: 3px;
+}
+
+/* 详情区块 */
+.cinema-detail-section {
+    margin-bottom: 2rem;
+}
+
+.cinema-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.cinema-detail-section h4 {
+    margin: 0 0 1rem 0;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-left: 4px solid #667eea;
+    padding-left: 0.8rem;
+}
+
+/* 信息行 */
+.cinema-detail-info {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.info-row {
+    display: flex;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    flex-shrink: 0;
+    width: 80px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.info-value {
+    flex: 1;
+    color: white;
+}
+
+/* 影厅列表 */
+.halls-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.hall-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.hall-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(108, 99, 255, 0.3);
+    transform: translateX(5px);
+}
+
+.hall-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.hall-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.hall-type,
+.hall-capacity {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(108, 99, 255, 0.2);
+    padding: 0.2rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid rgba(108, 99, 255, 0.3);
+}
+
+.hall-facilities {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.5rem;
+}
+
+.no-halls {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2rem;
+}
+
+/* 弹窗底部 */
+.cinema-modal-footer {
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-close {
+    padding: 0.7rem 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 影院信息区域样式优化 */
+.cinema-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cinema-info-left {
+    flex: 1;
+}
+
+.cinema-info-left h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.cinema-info-right {
+    flex-shrink: 0;
+}
+
+.btn-cinema-detail {
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+    font-size: 0.9rem;
+}
+
+.btn-cinema-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .cinema-modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .cinema-modal-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .cinema-modal-body {
+        padding: 1.5rem;
+    }
+    
+    .cinema-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .cinema-info-right {
+        width: 100%;
+    }
+    
+    .btn-cinema-detail {
+        width: 100%;
+    }
+    
+    .hall-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
