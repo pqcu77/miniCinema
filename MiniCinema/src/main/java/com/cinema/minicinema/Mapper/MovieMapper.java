@@ -22,8 +22,8 @@ public interface MovieMapper {
 
     // 2.1 模糊搜索电影（标题和描述）
     List<Movie> searchByKeyword(@Param("keyword") String keyword,
-                                @Param("offset") int offset,
-                                @Param("size") int size);
+            @Param("offset") int offset,
+            @Param("size") int size);
 
     // 2.2 统计搜索结果数量
     int countByKeyword(@Param("keyword") String keyword);
@@ -39,8 +39,8 @@ public interface MovieMapper {
 
     // 6. 获取相似电影
     List<Movie> getSimilarMovies(@Param("movieId") Integer movieId,
-                                 @Param("genre") String genre,
-                                 @Param("count") Integer count);
+            @Param("genre") String genre,
+            @Param("count") Integer count);
 
     // 7. 根据ID列表查询电影
     List<Movie> getMoviesByIds(@Param("movieIds") List<Integer> movieIds);
@@ -59,5 +59,5 @@ public interface MovieMapper {
 
     // 12. 根据类型获取电影
     List<Movie> getMoviesByGenre(@Param("genre") String genre,
-                                 @Param("count") int count);
+            @Param("count") int count);
 }

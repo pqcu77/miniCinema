@@ -10,8 +10,8 @@ import java.io.Serializable;
 public class Result<T> implements Serializable {
 
     private Integer code; // 1成功，0和其它数字为失败
-    private String msg;  // 错误信息
-    private T data;      // 数据
+    private String msg; // 错误信息
+    private T data; // 数据
 
     public static <T> Result<T> success() {
         Result<T> result = new Result<>();
@@ -22,6 +22,15 @@ public class Result<T> implements Serializable {
     public static <T> Result<T> success(T data) {
         Result<T> result = new Result<>();
         result.code = 1;
+        result.data = data;
+        return result;
+    }
+
+    // 添加这个方法：带数据和自定义消息
+    public static <T> Result<T> success(T data, String msg) {
+        Result<T> result = new Result<>();
+        result.code = 1;
+        result.msg = msg;
         result.data = data;
         return result;
     }

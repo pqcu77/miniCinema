@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择场次 - MiniCinema</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- ✅ 引入 Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+</head>
+
+
+
+<body>
+    <header>
+        <div class="header-left">
+            <h1 onclick="window.location.href='index.html'">🎬 MiniCinema</h1>
+        </div>
+        <div class="header-right"></div>
+    </header>
+
+    <div class="container">
+        <!-- 返回按钮 -->
+        <button onclick="history.back()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.7rem 1.5rem; border-radius: 25px; margin-bottom: 2rem; cursor: pointer; transition: all 0.3s ease;">
+            ← 返回
+        </button>
+
+        <!-- 电影信息横幅 -->
+        <div class="movie-banner centered">
+            <img id="movie-poster" src="" alt="电影海报" class="screening-movie-poster">
+            <div class="movie-brief">
+                <h2 id="movie-title" style="margin: 0 0 1rem 0; color: white;"></h2>
+                <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0;">
+                    <strong>时长：</strong><span id="movie-duration"></span> 分钟
+                </p>
+                <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0;">
+                    <strong>类型：</strong><span id="movie-genre"></span>
+                </p>
+            </div>
+        </div>
+
+        <!-- 场次列表 -->
+        <section class="screenings-section">
+            <!-- 标题栏：左侧标题 + 右侧日期选择 -->
+            <div class="section-header">
+                <h3 class="section-title">影院和场次</h3>
+                <div class="date-selector-input">
+                    <button class="date-nav-btn" id="prev-date">◀</button>
+                    
+                    <!-- ✅ 日期输入框 -->
+                    <div class="date-input-wrapper">
+                        <span class="date-icon">📅</span>
+                        <input type="date" 
+                               id="date-input" 
+                               class="date-input-field"
+                               placeholder="选择日期">
+                        <span class="date-text" id="date-text">选择日期</span>
+                    </div>
+                    
+                    <button class="date-nav-btn" id="next-date">▶</button>
+                </div>
+            </div>
+            
+            <!-- ✅ 影院导航栏（带滚动） -->
+            <div class="cinema-tabs-wrapper">
+                <button class="cinema-scroll-btn cinema-scroll-left" id="cinema-scroll-left" style="display: none;">◀</button>
+                
+                <div class="cinema-tabs" id="cinema-tabs">
+                    <!-- 通过 JS 动态生成 -->
+                </div>
+                
+                <button class="cinema-scroll-btn cinema-scroll-right" id="cinema-scroll-right" style="display: none;">▶</button>
+            </div>
+            
+            <!-- 场次列表容器 -->
+            <div id="cinema-content">
+                <!-- 通过 JS 动态生成 -->
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/utils.js"></script>
+    <script type="module" src="js/pages/movie-screenings.js"></script>
+    <!-- ✅ 引入 Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+    
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/utils.js"></script>
+    <script type="module" src="js/pages/movie-screenings.js"></script>
+</body>
+</html>

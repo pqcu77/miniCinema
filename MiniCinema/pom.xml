@@ -72,6 +72,19 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- ✅ 添加 WebSocket 支持 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+    
+        <!-- ✅ 添加 JSON 处理（如果还没有） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>2.0.43</version>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -41,7 +41,7 @@
                 OR m.director ILIKE CONCAT('%', #{keyword}, '%')
                 OR m.actors ILIKE CONCAT('%', #{keyword}, '%')
                 OR m.genre ILIKE CONCAT('%', #{keyword}, '%')
-                <if test="keyword.length > 2">
+                <if test="keyword.length &gt; 2">
                     OR m.search_text ILIKE CONCAT('%', #{keyword}, '%')
                     OR EXISTS (
                     SELECT 1 FROM movie_tags t
@@ -61,10 +61,10 @@
                 AND EXTRACT(YEAR FROM m.release_date) = #{year}
             </if>
             <if test="minRating != null">
-                AND m.rating >= #{minRating}
+                AND m.rating &gt;= #{minRating}
             </if>
             <if test="maxRating != null">
-                AND m.rating <= #{maxRating}
+                AND m.rating &lt;= #{maxRating}
             </if>
         </where>
         <choose>
@@ -112,7 +112,7 @@
                 OR m.director ILIKE CONCAT('%', #{keyword}, '%')
                 OR m.actors ILIKE CONCAT('%', #{keyword}, '%')
                 OR m.genre ILIKE CONCAT('%', #{keyword}, '%')
-                <if test="keyword.length > 2">
+                <if test="keyword.length &gt; 2">
                     OR m.search_text ILIKE CONCAT('%', #{keyword}, '%')
                     OR EXISTS (
                     SELECT 1 FROM movie_tags t
@@ -132,10 +132,10 @@
                 AND EXTRACT(YEAR FROM m.release_date) = #{year}
             </if>
             <if test="minRating != null">
-                AND m.rating >= #{minRating}
+                AND m.rating &gt;= #{minRating}
             </if>
             <if test="maxRating != null">
-                AND m.rating <= #{maxRating}
+                AND m.rating &lt;= #{maxRating}
             </if>
         </where>
     </select>
