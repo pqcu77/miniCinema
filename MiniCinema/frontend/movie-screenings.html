@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <!-- ✅ 引入 Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-</head>
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css"> -->
 
 
 
@@ -54,7 +53,7 @@
                         <input type="text" 
                             id="city-filter" 
                             class="filter-input"
-                            placeholder="城市 (如: 北京)">
+                            placeholder="城市(完整名称)(如: 北京市)">
                     </div>
         
                     <!-- 区域筛选 -->
@@ -63,7 +62,7 @@
                         <input type="text" 
                             id="district-filter" 
                             class="filter-input"
-                            placeholder="区域 (如: 朝阳)">
+                            placeholder="区域(完整名称)(如: 朝阳区)">
                     </div>
         
                     <!-- 影院名称筛选 -->
@@ -73,10 +72,11 @@
                             id="cinema-name-filter" 
                             class="filter-input"
                             placeholder="影院名称">
-                        <button class="filter-clear-all-btn" id="filter-clear-all-btn" style="display: none;">
-                            清空筛选
-                        </button>
+                        
                     </div>
+                    <button class="filter-clear-all-btn" id="filter-clear-all-btn">
+                        清空
+                    </button>
                 </div>
 
                 <div class="date-selector-input">
