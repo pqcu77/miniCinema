@@ -45,6 +45,40 @@
             <!-- 标题栏：左侧标题 + 右侧日期选择 -->
             <div class="section-header">
                 <h3 class="section-title">影院和场次</h3>
+
+                <!-- ✅ 三个独立的筛选输入框 -->
+                <div class="cinema-filters-container">
+                    <!-- 城市筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">🏙️</span>
+                        <input type="text" 
+                            id="city-filter" 
+                            class="filter-input"
+                            placeholder="城市 (如: 北京)">
+                    </div>
+        
+                    <!-- 区域筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">📍</span>
+                        <input type="text" 
+                            id="district-filter" 
+                            class="filter-input"
+                            placeholder="区域 (如: 朝阳)">
+                    </div>
+        
+                    <!-- 影院名称筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">🎬</span>
+                        <input type="text" 
+                            id="cinema-name-filter" 
+                            class="filter-input"
+                            placeholder="影院名称">
+                        <button class="filter-clear-all-btn" id="filter-clear-all-btn" style="display: none;">
+                            清空筛选
+                        </button>
+                    </div>
+                </div>
+
                 <div class="date-selector-input">
                     <button class="date-nav-btn" id="prev-date">◀</button>
                     

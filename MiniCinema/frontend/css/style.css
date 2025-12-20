@@ -886,7 +886,7 @@ header {
     margin-top: 3rem;
 }
 
-/* 标题栏 - 左右布局 */
+/* 标题栏 - 左右布局
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -900,6 +900,161 @@ header {
     font-size: 1.8rem;
     font-weight: 600;
     margin: 0;
+} */
+/* 标题栏 - 三栏布局 */
+.section-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+
+
+/* ==================== 影院筛选输入框（三个独立输入框）==================== */
+
+.cinema-filters-container {
+    display: flex;
+    gap: 0.8rem;
+    width: auto;
+    max-width: 600px;
+}
+
+/* 单个筛选输入框容器 */
+.filter-input-wrapper {
+    position: relative;
+    width:180px;
+    height: 46px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 23px;
+    padding: 0 1rem 0 2.5rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+/* ✅ 影院名称输入框稍宽一点 */
+.filter-input-wrapper:nth-child(3) {
+    width: 250px;
+}
+
+.filter-input-wrapper:focus-within {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.filter-icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.filter-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.filter-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+
+/* ✅ 移除浏览器自动完成选中后的白色高亮背景 */
+.filter-input:-webkit-autofill,
+.filter-input:-webkit-autofill:hover,
+.filter-input:-webkit-autofill:focus,
+.filter-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0) inset !important;
+    -webkit-text-fill-color: white !important;
+    box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0) inset !important;
+    background-color: transparent !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: white !important;
+}
+
+/* ✅ 移除选中状态的白色背景 */
+.filter-input::selection {
+    background: rgba(108, 99, 255, 0.15);
+    color: white;
+}
+
+.filter-input::-moz-selection {
+    background: rgba(108, 99, 255, 0.15);
+    color: white;
+}
+
+/* 清空所有筛选按钮 */
+.filter-clear-all-btn {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0.3rem 0.7rem;
+    border-radius: 15px;
+    background: rgba(255, 87, 87, 0.2);
+    border: 1px solid rgba(255, 87, 87, 0.4);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 3;
+    white-space: nowrap;
+}
+
+.filter-clear-all-btn:hover {
+    background: rgba(255, 87, 87, 0.4);
+    border-color: rgba(255, 87, 87, 0.6);
+    transform: translateY(-50%) scale(1.05);
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+    .section-header {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .cinema-filters-container {
+        flex-direction: column;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .cinema-filters-container {
+        gap: 0.6rem;
+    }
+    
+    .filter-input-wrapper {
+        height: 42px;
+        padding: 0 1rem 0 2.5rem;
+    }
+    
+    .filter-icon {
+        font-size: 1rem;
+        left: 0.8rem;
+    }
 }
 
 /* 日期选择器 */
@@ -1575,30 +1730,8 @@ header {
     padding: 2rem;
 }
 
-/* 弹窗底部 */
-.cinema-modal-footer {
-    padding: 1rem 2rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: flex-end;
-}
 
-.btn-close {
-    padding: 0.7rem 2rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 25px;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
 
-.btn-close:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-}
 
 /* 影院信息区域样式优化 */
 .cinema-info {
