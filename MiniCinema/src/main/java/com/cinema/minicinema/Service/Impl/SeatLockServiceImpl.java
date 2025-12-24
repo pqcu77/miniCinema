@@ -244,9 +244,16 @@ public class SeatLockServiceImpl implements SeatLockService {
 
     @Override
     public void releaseExpiredLocks() {
-        int count = seatLockMapper.releaseExpiredLocks();
-        if (count > 0) {
-            log.info("自动释放了 {} 个过期的座位锁定", count);
+        try {
+            int count = seatLockMapper.releaseExpiredLocks();
+            if (count > 0) {
+                log.info("自动释放了 {} 个过期的座位锁定", count);
+            }
+        } catch (org.apache.ibatis.binding.BindingException be) {
+            // Mapper statement missing — log and skip to avoid crashing scheduled task
+            log.warn("releaseExpiredLocks mapper statement not found: {}. Skipping automatic release.", be.getMessage());
+        } catch (Exception e) {
+            log.error("自动释放过期座位锁定时出错: {}", e.getMessage(), e);
         }
     }
 }

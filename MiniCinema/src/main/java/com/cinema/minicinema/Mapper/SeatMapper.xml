@@ -3,33 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cinema.minicinema.Mapper.SeatMapper">
 
-    <resultMap id="SeatResultMap" type="com.cinema.minicinema.entity.Seat">
-        <id property="seatId" column="seat_id"/>
-        <result property="hallId" column="hall_id"/>
-        <result property="rowNum" column="row_num"/>
-        <result property="colNum" column="col_num"/>
-        <result property="seatLabel" column="seat_label"/>
-        <result property="seatStatus" column="seat_status"/>
-        <result property="createTime" column="create_time"/>
-    </resultMap>
-
-    <select id="selectByHallId" resultMap="SeatResultMap">
-        SELECT * FROM seats 
-        WHERE hall_id = #{hallId}
-        ORDER BY row_num, col_num
-    </select>
-
-    <select id="selectByIds" resultMap="SeatResultMap">
-        SELECT * FROM seats 
-        WHERE seat_id IN
-        <foreach collection="seatIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </select>
-
-    <select id="selectById" resultMap="SeatResultMap">
-        SELECT * FROM seats 
-        WHERE seat_id = #{seatId}
-    </select>
+    <!-- moved to resources/com/cinema/minicinema/Mapper/SeatMapper.xml -->
+    <!-- Real mapper XML is in src/main/resources/com/cinema/minicinema/Mapper/SeatMapper.xml -->
 
 </mapper>

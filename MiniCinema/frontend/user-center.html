@@ -17,15 +17,17 @@
   <div class="container">
     <div class="user-center">
       <div class="user-menu">
-        <button class="menu-btn active" onclick="switchTab('info')">个人信息</button>
-        <button class="menu-btn" onclick="switchTab('password')">修改密码</button>
-        <button class="menu-btn" onclick="switchTab('favorites')">我的收藏</button>
-        <button class="menu-btn" onclick="switchTab('orders')">订单记录</button>
+        <button class="menu-btn active" onclick="switchTab('info', event)">个人信息</button>
+        <button class="menu-btn" onclick="switchTab('password', event)">修改密码</button>
+        <button class="menu-btn" onclick="switchTab('favorites', event)">我的收藏</button>
+        <button class="menu-btn" onclick="switchTab('history', event)">历史记录</button>
+        <button class="menu-btn" onclick="switchTab('orders', event)">订单记录</button>
       </div>
       <div class="user-content">
         <div id="info" class="content-tab active"></div>
         <div id="password" class="content-tab"></div>
         <div id="favorites" class="content-tab"></div>
+        <div id="history" class="content-tab"></div>
         <div id="orders" class="content-tab"></div>
       </div>
     </div>
@@ -36,4 +38,3 @@
   <script type="module" src="js/pages/user-center.js"></script>
 </body>
 </html>
-
