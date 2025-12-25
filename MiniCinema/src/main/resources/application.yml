@@ -6,12 +6,11 @@ spring:
     username: developer
     password: cinema@123
 
-
   # 添加 Redis 配置
   redis:
-    host: localhost      # 或者 127.0.0.1
+    host: localhost # 或者 127.0.0.1
     port: 6379
-    password:            # 默认没有密码，留空即可
+    password: # 默认没有密码，留空即可
     database: 0
     timeout: 3000ms
     lettuce:
