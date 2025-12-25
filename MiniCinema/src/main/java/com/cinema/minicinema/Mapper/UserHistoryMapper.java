@@ -17,6 +17,7 @@ public interface UserHistoryMapper {
                                             @Param("action") String action);
 
     // 3. 获取用户最近浏览的电影
+    // moved SQL to XML to avoid duplicate mapped statement
     List<Integer> getRecentViewedMovies(@Param("userId") Integer userId,
                                         @Param("limit") Integer limit);
 
@@ -38,8 +39,10 @@ public interface UserHistoryMapper {
     /**
      * 记录用户观看电影的历史
      */
-    @Insert("INSERT INTO user_history (user_id, movie_id, created_at, watch_duration) " +
-            "VALUES (#{userId}, #{movieId}, #{viewTime}, #{watchDuration})")
+    @Insert("INSERT INTO user_history (user_id, movie_id, action, created_at, watch_duration) " +
+            "VALUES (#{userId}, #{movieId}, 'view', #{viewTime}, #{watchDuration}) " +
+            "ON CONFLICT (user_id, movie_id, action) DO UPDATE SET " +
+            "created_at = EXCLUDED.created_at, watch_duration = EXCLUDED.watch_duration")
     void recordUserHistory(@Param("userId") Long userId,
                           @Param("movieId") Long movieId,
                           @Param("viewTime") java.time.LocalDateTime viewTime,

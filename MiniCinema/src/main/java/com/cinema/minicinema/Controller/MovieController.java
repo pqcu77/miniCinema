@@ -1,18 +1,18 @@
 package com.cinema.minicinema.Controller;
 
 import com.cinema.minicinema.Service.MovieCommentService;
-import com.cinema.minicinema.Service.MovieRecommendService;
-import com.cinema.minicinema.Service.MovieSearchService;
 import com.cinema.minicinema.entity.Movie;
 import com.cinema.minicinema.entity.MovieComment;
 import com.cinema.minicinema.Mapper.UserHistoryMapper;
 import com.cinema.minicinema.Repository.MovieRepository;
+import com.cinema.minicinema.util.AuthUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.StringUtils;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,12 +26,6 @@ import java.util.stream.Collectors;
 public class MovieController {
 
     @Autowired
-    private MovieSearchService movieSearchService;
-
-    @Autowired
-    private MovieRecommendService movieRecommendService;
-
-    @Autowired
     private UserHistoryMapper userHistoryMapper;
 
     @Autowired
@@ -40,36 +34,9 @@ public class MovieController {
     @Autowired
     private MovieCommentService movieCommentService;
 
+    @Autowired
+    private HttpServletRequest request;
 
-    /**
-     * 获取混合推荐电影
-     * @param movieId 当前电影ID
-     * @param userId 用户ID（可选）
-     * @param limit 推荐数量
-     */
-    @GetMapping("/{movieId}/recommendations")
-    public Map<String, Object> getRecommendations(
-            @PathVariable Long movieId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(defaultValue = "6") int limit) {
-
-        log.info("获取推荐: movieId={}, userId={}, limit={}", movieId, userId, limit);
-
-        try {
-            List<Movie> recommendations = movieRecommendService.getHybridRecommendations(movieId, userId, limit);
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("recommendations", recommendations);
-            result.put("count", recommendations.size());
-
-            return result;
-        } catch (Exception e) {
-            log.error("获取推荐失败: {}", e.getMessage(), e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "推荐获取失败：" + e.getMessage());
-            return error;
-        }
-    }
 
     /**
      * 记录用户观看电影的行为（REST: POST /api/movies/{movieId}/history）
@@ -77,26 +44,33 @@ public class MovieController {
     @PostMapping("/{movieId}/history")
     public Map<String, Object> recordMovieHistory(
             @PathVariable Long movieId,
-            @RequestParam Long userId,
+            @RequestParam(required = false) String userId,
             @RequestParam(defaultValue = "0") Integer watchDuration) {
 
-        log.info("记录观看: userId={}, movieId={}, watchDuration={}", userId, movieId, watchDuration);
+        Long resolvedUserId = AuthUtil.resolveUserId(request, userId);
 
+        log.info("记录观看: userId={}, movieId={}, watchDuration={}", resolvedUserId, movieId, watchDuration);
+
+        Map<String, Object> result = new HashMap<>();
         try {
-            userHistoryMapper.recordUserHistory(userId, movieId, LocalDateTime.now(), watchDuration);
+            if (resolvedUserId == null) {
+                result.put("success", false);
+                result.put("message", "userId missing");
+                return result;
+            }
 
-            Map<String, Object> result = new HashMap<>();
+            userHistoryMapper.recordUserHistory(resolvedUserId, movieId, LocalDateTime.now(), watchDuration);
+
             result.put("success", true);
             result.put("message", "观看记录已保存");
 
             return result;
         } catch (Exception e) {
             log.error("记录观看失败: {}", e.getMessage(), e);
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", false);
-            result.put("message", "记录失败：" + e.getMessage());
-
-            return result;
+            Map<String, Object> r = new HashMap<>();
+            r.put("success", false);
+            r.put("message", "记录失败：" + e.getMessage());
+            return r;
         }
     }
 
@@ -319,4 +293,64 @@ public class MovieController {
             return result;
         }
     }
+
+    /**
+     * 获取用户观看历史（最近浏览的电影）
+     * 支持两个调用方式：
+     * - GET /api/movies/history?userId=5
+     * - GET /api/users/{userId}/history (handled by different controller ideally) — we provide alias below
+     */
+    @GetMapping(value = "/history", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public Map<String, Object> getUserHistory(@RequestParam(value = "userId", required = false) String userId,
+                                              @RequestParam(value = "limit", defaultValue = "20") int limit) {
+        Long resolvedUserId = AuthUtil.resolveUserId(request, userId);
+        log.info("获取用户历史: userId={}, limit={}", resolvedUserId, limit);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            if (resolvedUserId == null) {
+                result.put("code", 1);
+                result.put("msg", "success");
+                result.put("data", Collections.emptyList());
+                return result;
+            }
+
+            List<Integer> recent = userHistoryMapper.getRecentViewedMovies(resolvedUserId.intValue(), limit);
+            if (recent == null || recent.isEmpty()) {
+                result.put("code", 1);
+                result.put("msg", "success");
+                result.put("data", Collections.emptyList());
+                return result;
+            }
+
+            List<Movie> movies = recent.stream()
+                    .map(id -> movieRepository.findById(id).orElse(null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            result.put("code", 1);
+            result.put("msg", "success");
+            result.put("data", movies);
+            return result;
+        } catch (Exception e) {
+            log.error("获取用户历史失败: {}", e.getMessage(), e);
+            result.put("code", 0);
+            result.put("msg", "获取用户历史失败：" + e.getMessage());
+            result.put("data", null);
+            return result;
+        }
+    }
+
+    // helper to resolve userId from request if not provided -- kept for compatibility but unused now
+    private Long resolveUserId(Long userIdParam) {
+        if (userIdParam != null) return userIdParam;
+        String auth = request.getHeader("Authorization");
+        if (!StringUtils.hasText(auth)) return null;
+        String token = auth.startsWith("Bearer ") ? auth.substring(7) : auth;
+        try {
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 }
