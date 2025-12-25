@@ -3,26 +3,33 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cinema.minicinema.Mapper.ScreeningMapper">
 
-    <!--
-    <select id="selectDetailById" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningDetailVO">
+    <select id="selectDetailById" resultType="com.cinema.minicinema.dto.ScreeningDetailDTO">
         SELECT 
-            s.screening_id,
-            s.movie_id,
-            s.cinema_id,
-            s.hall_id,
-            m.title AS movie_title,
-            c.name AS cinema_name,
-            h.hall_name AS hall_name,
-            s.screen_time,
+            s.screening_id AS screeningId,
+            s.screen_time AS screenTime,
             s.price,
-            s.video_type,
-            s.available_seats
+            s.video_type AS videoType,
+            s.available_seats AS availableSeats,
+            m.movie_id AS movieId,
+            m.title AS movieTitle,
+            m.poster_url AS posterUrl,
+            m.duration,
+            m.genre,
+            m.director,
+            m.actors,
+            m.description,
+            c.cinema_id AS cinemaId,
+            c.name AS cinemaName,
+            c.address,
+            h.hall_id AS hallId,
+            h.hall_name AS hallName,
+            h.total_seats AS totalSeats
         FROM screenings s
         LEFT JOIN movies m ON s.movie_id = m.movie_id
         LEFT JOIN cinemas c ON s.cinema_id = c.cinema_id
         LEFT JOIN halls h ON s.hall_id = h.hall_id
         WHERE s.screening_id = #{screeningId}
-    </select>-->
+    </select>
 
     <!-- ========== 新增的查询 ========== -->
     
@@ -57,8 +64,9 @@
         ORDER BY s.screen_time ASC
     </select>
 
+    
     <!-- 查询场次详细信息 -->
-    <select id="selectDetailById" resultType="com.cinema.minicinema.dto.ScreeningDetailDTO">
+  <!--  <select id="selectDetailById" resultType="com.cinema.minicinema.dto.ScreeningDetailDTO">
         SELECT 
             s.screening_id,
             s.screen_time,
@@ -85,6 +93,7 @@
         LEFT JOIN halls h ON s.hall_id = h.hall_id
         WHERE s.screening_id = #{screeningId}
     </select>
+    -->
 
     <!-- 查询某影院在某日的所有场次 -->
     <select id="selectByCinemaAndDate" resultType="com.cinema.minicinema.Mapper.ScreeningMapper$ScreeningItem">

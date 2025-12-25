@@ -5,8 +5,8 @@ import com.cinema.minicinema.Mapper.ScreeningMapper;
 import com.cinema.minicinema.Service.CartService;
 import com.cinema.minicinema.dto.CartDTO;
 import com.cinema.minicinema.dto.CartItemDTO;
+import com.cinema.minicinema.dto.ScreeningDetailDTO;  
 import com.cinema.minicinema.entity.Cart;
-import com.cinema.minicinema.entity.Screening;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
@@ -29,14 +29,14 @@ public class CartServiceImpl implements CartService {
         cartDTO.setUserId(userId);
         cartDTO.setTotalItems(cartItems.size());
         
-        BigDecimal totalAmount = BigDecimal.ZERO;
         List<CartItemDTO> items = cartItems.stream().map(cart -> {
-            Screening screening = screeningMapper.selectById(cart.getScreeningId());
+            ScreeningDetailDTO screeningDetail = screeningMapper.selectDetailById(cart.getScreeningId().intValue());
+            
             CartItemDTO item = new CartItemDTO();
             item.setCartId(cart.getId());
             item.setScreeningId(cart.getScreeningId());
-            if (screening != null) {
-                item.setShowTime(screening.getScreenTime() == null ? null : screening.getScreenTime().toString());
+            if (screeningDetail != null) {
+                item.setShowTime(screeningDetail.getScreenTime() == null ? null : screeningDetail.getScreenTime().toString());
             } else {
                 item.setShowTime(null);
             }
@@ -58,16 +58,19 @@ public class CartServiceImpl implements CartService {
     
     @Override
     public void addToCart(Long userId, Long screeningId, String seatNumbers, Integer quantity) {
-        Screening screening = screeningMapper.selectById(screeningId);
+        ScreeningDetailDTO screeningDetail = screeningMapper.selectDetailById(screeningId.intValue());
+        
+        if (screeningDetail == null) {
+            throw new RuntimeException("场次不存在");
+        }
         
         Cart cart = new Cart();
         cart.setUserId(userId);
         cart.setScreeningId(screeningId);
         cart.setSeatNumbers(seatNumbers);
         cart.setQuantity(quantity);
-        cart.setPrice(screening.getPrice());
-        cart.setTotalPrice(screening.getPrice().multiply(BigDecimal.valueOf(quantity)));
-        cart.setCreatedAt(System.currentTimeMillis());
+        cart.setPrice(screeningDetail.getPrice());
+        cart.setTotalPrice(screeningDetail.getPrice().multiply(BigDecimal.valueOf(quantity)));
         
         cartMapper.insert(cart);
     }
@@ -85,11 +88,12 @@ public class CartServiceImpl implements CartService {
     @Override
     public void updateCartItem(Long cartId, String seatNumbers, Integer quantity) {
         Cart cart = cartMapper.selectById(cartId);
-        cart.setSeatNumbers(seatNumbers);
-        cart.setQuantity(quantity);
-        cart.setTotalPrice(cart.getPrice().multiply(BigDecimal.valueOf(quantity)));
-        cart.setUpdatedAt(System.currentTimeMillis());
-        
-        cartMapper.update(cart);
+        if (cart != null) {
+            cart.setSeatNumbers(seatNumbers);
+            cart.setQuantity(quantity);
+            cart.setTotalPrice(cart.getPrice().multiply(BigDecimal.valueOf(quantity)));
+            
+            cartMapper.update(cart);
+        }
     }
 }

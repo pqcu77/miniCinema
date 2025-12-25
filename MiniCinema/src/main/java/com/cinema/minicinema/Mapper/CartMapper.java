@@ -15,14 +15,14 @@ public interface CartMapper {
     Cart selectById(Long id);
     
     // 添加到购物车
-    @Insert("INSERT INTO cart (user_id, screening_id, seat_numbers, quantity, price, total_price, created_at) " +
-            "VALUES (#{userId}, #{screeningId}, #{seatNumbers}, #{quantity}, #{price}, #{totalPrice}, #{createdAt})")
+    @Insert("INSERT INTO cart (user_id, screening_id, seat_numbers, quantity, price, total_price) " +
+            "VALUES (#{userId}, #{screeningId}, #{seatNumbers}, #{quantity}, #{price}, #{totalPrice})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Cart cart);
     
     // 更新购物车
     @Update("UPDATE cart SET seat_numbers = #{seatNumbers}, quantity = #{quantity}, " +
-            "total_price = #{totalPrice}, updated_at = #{updatedAt} WHERE id = #{id}")
+            "total_price = #{totalPrice} WHERE id = #{id}")
     int update(Cart cart);
     
     // 删除购物车项

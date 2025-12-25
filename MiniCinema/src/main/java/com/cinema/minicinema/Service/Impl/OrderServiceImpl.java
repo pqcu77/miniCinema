@@ -1,18 +1,17 @@
 package com.cinema.minicinema.Service.Impl;
 
-import com.cinema.minicinema.Mapper.*;
+import com.cinema.minicinema.Mapper.CartMapper;
+import com.cinema.minicinema.Mapper.OrderMapper;
+import com.cinema.minicinema.Mapper.ScreeningMapper;
 import com.cinema.minicinema.Service.OrderService;
-import com.cinema.minicinema.common.exception.BusinessException;
 import com.cinema.minicinema.dto.OrderDTO;
-import com.cinema.minicinema.entity.*;
+import com.cinema.minicinema.entity.Cart;
+import com.cinema.minicinema.entity.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,89 +23,95 @@ public class OrderServiceImpl implements OrderService {
     private CartMapper cartMapper;
     
     @Autowired
-    private OrderItemMapper orderItemMapper;
-    
-    @Autowired
     private ScreeningMapper screeningMapper;
-    
+
     @Override
     @Transactional
     public OrderDTO createOrder(Long userId) {
+        // 1. 从购物车获取用户的所有商品
         List<Cart> cartItems = cartMapper.selectByUserId(userId);
-        if (cartItems.isEmpty()) {
-            throw new BusinessException("购物车为空");
+        if (cartItems == null || cartItems.isEmpty()) {
+            throw new RuntimeException("购物车为空，无法创建订单");
         }
 
+        // 2. 计算订单总额
+        BigDecimal totalAmount = cartItems.stream()
+            .map(Cart::getTotalPrice)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 3. 合并座位信息和数量
+        String seatInfo = cartItems.stream()
+            .map(Cart::getSeatNumbers)
+            .collect(Collectors.joining(","));
+        Integer seatCount = cartItems.stream()
+            .mapToInt(Cart::getQuantity)
+            .sum();
+
+        // 4. 生成订单号（示例：ORD20251216001）
+        String orderNumber = "ORD" + System.currentTimeMillis();
+
+        // 5. 创建订单对象
         Order order = new Order();
-        order.setUserId(userId.intValue());        // Order.userId 是 Integer
-        order.setStatus("0");                      // 待支付，字符串
-        order.setCreateTime(LocalDateTime.now());
-        order.setOrderNumber(generateOrderNumber());
-        order.setTotalAmount(cartItems.stream()
-                .map(Cart::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        order.setOrderNumber(orderNumber);
+        order.setUserId(userId);
+        // 如果购物车中所有项目都来自同一个 screening，可以取第一个
+        order.setScreeningId(cartItems.get(0).getScreeningId());
+        order.setSeatInfo(seatInfo);
+        order.setSeatCount(seatCount);
+        order.setTotalAmount(totalAmount);
+        order.setStatus("pending"); // 待支付
 
+        // 6. 保存订单到数据库
         orderMapper.insert(order);
-        Integer orderId = order.getOrderId();
-        Long orderIdLong = orderId == null ? null : orderId.longValue();
 
-        for (Cart cartItem : cartItems) {
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrderId(orderIdLong);
-            orderItem.setScreeningId(cartItem.getScreeningId() == null ? null : cartItem.getScreeningId().longValue());
-            orderItem.setSeatNumbers(cartItem.getSeatNumbers());
-            orderItem.setPrice(cartItem.getPrice());
-            orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setTotalPrice(cartItem.getTotalPrice());
-            orderItem.setCreatedAt(System.currentTimeMillis());
-            orderItemMapper.insert(orderItem);
-        }
-
+        // 7. 清空购物车
         cartMapper.deleteByUserId(userId);
-        return getOrderDetail(orderIdLong);
+
+        // 8. 返回订单 DTO
+        return convertToDTO(order);
     }
-    
+
     @Override
     public OrderDTO getOrderDetail(Long orderId) {
-        Order order = orderMapper.selectById(orderId); // 改用 Long
+        Order order = orderMapper.selectById(orderId);
         if (order == null) {
-            throw new BusinessException("订单不存在");
+            throw new RuntimeException("订单不存在");
         }
-
-        OrderDTO orderDTO = new OrderDTO();
-        orderDTO.setOrderId(order.getOrderId() == null ? null : Long.valueOf(order.getOrderId()));
-        orderDTO.setUserId(order.getUserId() == null ? null : Long.valueOf(order.getUserId()));
-        orderDTO.setStatus(order.getStatus() == null ? null : Integer.parseInt(order.getStatus()));
-        orderDTO.setTotalAmount(order.getTotalAmount());
-        orderDTO.setOrderNumber(order.getOrderNumber());
-        orderDTO.setCreatedAt(order.getCreateTime() == null ? null
-                : order.getCreateTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());
-        return orderDTO;
+        return convertToDTO(order);
     }
-    
+
     @Override
     public List<OrderDTO> getUserOrders(Long userId) {
-        List<Order> orders = orderMapper.selectByUserId(userId); // 改用 Long
+        List<Order> orders = orderMapper.selectByUserId(userId);
         return orders.stream()
-                .map(o -> getOrderDetail(o.getOrderId() == null ? null : o.getOrderId().longValue()))
-                .collect(Collectors.toList());
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
-    
+
     @Override
-    @Transactional
     public void cancelOrder(Long orderId) {
-        Order order = orderMapper.selectById(orderId); // 改用 Long
+        Order order = orderMapper.selectById(orderId);
         if (order == null) {
-            throw new BusinessException("订单不存在");
+            throw new RuntimeException("订单不存在");
         }
-        if (!"0".equals(order.getStatus())) {
-            throw new BusinessException("只能取消待支付订单");
+        if (!"pending".equals(order.getStatus())) {
+            throw new RuntimeException("只有待支付的订单才能取消");
         }
-        order.setStatus("2"); // 已取消
-        orderMapper.update(order);
+        orderMapper.cancelOrder(orderId);
     }
-    
-    private String generateOrderNumber() {
-        return "ORD" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 8);
+
+    /**
+     * 将 Order 实体转换为 OrderDTO
+     */
+    private OrderDTO convertToDTO(Order order) {
+        OrderDTO dto = new OrderDTO();
+        dto.setOrderId(order.getOrderId());
+        dto.setOrderNumber(order.getOrderNumber());
+        dto.setUserId(order.getUserId());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setStatus(order.getStatus());
+        dto.setCreateTime(order.getCreateTime());
+        dto.setPayTime(order.getPayTime());
+        return dto;
     }
 }
