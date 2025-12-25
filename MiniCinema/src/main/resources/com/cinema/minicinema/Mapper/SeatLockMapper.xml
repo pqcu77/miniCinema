@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cinema.minicinema.Mapper.SeatLockMapper">
+
+    <resultMap id="SeatLockResultMap" type="com.cinema.minicinema.entity.SeatLock">
+        <id property="lockId" column="lock_id"/>
+        <result property="screeningId" column="screening_id"/>
+        <result property="seatId" column="seat_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="lockTime" column="lock_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="lockStatus" column="lock_status"/>
+        <result property="orderId" column="order_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="lockId">
+        INSERT INTO seat_locks(screening_id, seat_id, user_id, lock_time, expire_time, lock_status)
+        VALUES(#{screeningId}, #{seatId}, #{userId}, #{lockTime}, #{expireTime}, #{lockStatus})
+    </insert>
+
+    <select id="selectActiveByScreeningId" resultMap="SeatLockResultMap">
+        SELECT * FROM seat_locks
+        WHERE screening_id = #{screeningId}
+          AND lock_status IN ('LOCKED', 'PAID')
+          AND (lock_status = 'PAID' OR expire_time > NOW())
+    </select>
+
+    <select id="selectByUserAndScreening" resultMap="SeatLockResultMap">
+        SELECT * FROM seat_locks
+        WHERE user_id = #{userId}
+          AND screening_id = #{screeningId}
+          AND lock_status = 'LOCKED'
+          AND expire_time > NOW()
+    </select>
+
+    <update id="cancelByUserAndScreening">
+        UPDATE seat_locks
+        SET lock_status = 'CANCELLED'
+        WHERE user_id = #{userId}
+          AND screening_id = #{screeningId}
+          AND lock_status = 'LOCKED'
+    </update>
+
+    <update id="updateToPaid">
+        UPDATE seat_locks
+        SET lock_status = 'PAID',
+            order_id = #{orderId}
+        WHERE lock_id IN
+        <foreach collection="lockIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="releaseExpiredLocks">
+        UPDATE seat_locks
+        SET lock_status = 'EXPIRED'
+        WHERE lock_status = 'LOCKED'
+          AND expire_time <![CDATA[ <= ]]> NOW()
+    </update>
+
+</mapper>

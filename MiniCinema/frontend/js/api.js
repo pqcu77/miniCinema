@@ -1,12 +1,18 @@
 const API_BASE_URL = 'http://localhost:8080';
 
+// Add import for global user state so we reliably resolve userId/token
+import userState from './userState.js';
+
 const api = {
   // 通用 HTTP 方法
   get: (url, params = {}) => {
-    // 构建查询字符串
-    const queryString = Object.entries(params)
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      .join('&');
+    // 构建查询字符串使用 URLSearchParams 保证不会把 undefined 序列化为字符串
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v === null || typeof v === 'undefined') return;
+      searchParams.append(k, String(v));
+    });
+    const queryString = searchParams.toString();
     const fullUrl = queryString ? `${API_BASE_URL}${url}?${queryString}` : `${API_BASE_URL}${url}`;
 
     return fetch(fullUrl, {
@@ -110,39 +116,146 @@ const api = {
   },
 
   // 收藏相关
-  addFavorite: (token, movieId) => {
-    return fetch(`${API_BASE_URL}/favorite/add`, {
+  // NOTE: backend FavoriteController expects userId as request parameter or Authorization header. Frontend will auto-resolve userId from userState/localStorage if not provided.
+  addFavorite: (token, movieId, userId) => {
+    // Prefer explicit param, then userState, then localStorage as fallback
+    let resolvedUserId = null;
+    if (typeof userId !== 'undefined' && userId !== null) resolvedUserId = userId;
+    else {
+      try {
+        const s = userState?.getUserId?.();
+        if (s) resolvedUserId = s;
+        else {
+          const u = JSON.parse(localStorage.getItem('userInfo'));
+          if (u && (u.userId || u.userId === 0)) resolvedUserId = u.userId;
+        }
+      } catch (e) {
+        resolvedUserId = null;
+      }
+    }
+
+    // ensure numeric id or null
+    const uid = Number(resolvedUserId);
+    const finalUserId = Number.isFinite(uid) ? uid : null;
+
+    const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+
+    const params = new URLSearchParams();
+    if (finalUserId !== null) params.append('userId', String(finalUserId));
+    params.append('movieId', String(movieId));
+
+    const url = `${API_BASE_URL}/favorite/add?${params.toString()}`;
+    return fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include',
-      body: JSON.stringify({ movieId })
+      headers,
+      credentials: 'include'
     }).then(res => res.json());
   },
 
-  removeFavorite: (token, movieId) => {
+  removeFavorite: (token, movieId, userId) => {
+    let resolvedUserId = null;
+    if (typeof userId !== 'undefined' && userId !== null) resolvedUserId = userId;
+    else {
+      try {
+        const s = userState?.getUserId?.();
+        if (s) resolvedUserId = s;
+        else {
+          const u = JSON.parse(localStorage.getItem('userInfo'));
+          if (u && (u.userId || u.userId === 0)) resolvedUserId = u.userId;
+        }
+      } catch (e) {
+        resolvedUserId = null;
+      }
+    }
+
+    const uid = Number(resolvedUserId);
+    const finalUserId = Number.isFinite(uid) ? uid : null;
+
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    return fetch(`${API_BASE_URL}/favorite/remove/${movieId}`, {
+    const params = new URLSearchParams();
+    if (finalUserId !== null) params.append('userId', String(finalUserId));
+
+    const paramStr = params.toString();
+    const url = `${API_BASE_URL}/favorite/remove/${encodeURIComponent(movieId)}${paramStr ? `?${paramStr}` : ''}`;
+    return fetch(url, {
       method: 'DELETE',
       headers,
       credentials: 'include'
     }).then(res => res.json());
   },
 
-  getFavorites: (token) => {
+  getFavorites: (token, userId) => {
+    let resolvedUserId = null;
+    if (typeof userId !== 'undefined' && userId !== null) resolvedUserId = userId;
+    else {
+      try {
+        const s = userState?.getUserId?.();
+        if (s) resolvedUserId = s;
+        else {
+          const u = JSON.parse(localStorage.getItem('userInfo'));
+          if (u && (u.userId || u.userId === 0)) resolvedUserId = u.userId;
+        }
+      } catch (e) {
+        resolvedUserId = null;
+      }
+    }
+
+    const uid = Number(resolvedUserId);
+    const finalUserId = Number.isFinite(uid) ? uid : null;
+
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    return fetch(`${API_BASE_URL}/favorite/list`, {
+    const params = new URLSearchParams();
+    if (finalUserId !== null) params.append('userId', String(finalUserId));
+
+    const url = `${API_BASE_URL}/favorite/list${params.toString() ? `?${params.toString()}` : ''}`;
+    return fetch(url, {
       headers,
       credentials: 'include'
-    }).then(res => res.json());
+    })
+      .then(res => res.json())
+      .then(json => {
+        // Normalize to a consistent array of { movieId, posterUrl, title, rating }
+        let rawList = [];
+        if (!json) return [];
+        if (Array.isArray(json)) rawList = json;
+        else if ((json.code === 1 || json.code === 200) && json.data) {
+          if (Array.isArray(json.data)) rawList = json.data;
+          else if (Array.isArray(json.data.records)) rawList = json.data.records;
+        } else if (Array.isArray(json.data)) rawList = json.data;
+        else if (Array.isArray(json.records)) rawList = json.records;
+
+        // map to normalized objects
+        const normalized = rawList.map(raw => {
+          const movieIdRaw = raw.movieId ?? raw.movie_id ?? raw.movieid ?? raw.movie?.movieId ?? raw.movie?.movie_id ?? raw.movie?.id ?? raw.id ?? null;
+          const movieId = movieIdRaw != null ? String(movieIdRaw) : null;
+          const posterUrl = raw.posterUrl ?? raw.poster_url ?? raw.posterurl ?? raw.poster ?? raw.movie?.posterUrl ?? raw.movie?.poster_url ?? raw.movie?.poster ?? raw.movie?.poster_path ?? null;
+          const title = raw.title ?? raw.name ?? raw.movie?.title ?? raw.movie?.name ?? '';
+          const rating = raw.rating ?? raw.score ?? raw.movie?.rating ?? raw.movie?.vote_average ?? null;
+          return { movieId, posterUrl, title, rating, raw };
+        }).filter(item => item.movieId != null);
+
+        return normalized;
+      });
   }
 };
 
-// 旧版全局函数 searchMovies / getMovieRecommendations 已移除，
-// 请统一使用 api.searchMovies 和 api.getRecommendedMovies 或
-// 在需要推荐列表的地方直接调用后端 /api/movies/{movieId}/recommendations 接口。
+// 兼容旧版全局函数：某些页面仍然直接调用 searchMovies() 或 getMovieRecommendations(movieId)
+function searchMovies(keyword = '', page = 1, size = 10) {
+  // backend expects page starting from 1
+  return api.searchMovies(keyword, '', page, size);
+}
+
+function getMovieRecommendations(movieId, userId = null, limit = 6) {
+  // current backend has no per-movie recommendations endpoint; use global top-rated recommendations as fallback
+  return api.getRecommendedMovies(limit);
+}
+
+// 绑定到 window 以兼容非模块加载的页面
+if (typeof window !== 'undefined') {
+  window.api = api;
+  window.searchMovies = searchMovies;
+  window.getMovieRecommendations = getMovieRecommendations;
+}
 
 // 导出 API 对象和常量，以便在模块中使用
 export { API_BASE_URL, api };

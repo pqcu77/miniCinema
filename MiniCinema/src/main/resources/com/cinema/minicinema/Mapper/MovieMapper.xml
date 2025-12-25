@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cinema.minicinema.Mapper.MovieMapper">
+
+    <resultMap id="MovieMap" type="com.cinema.minicinema.entity.Movie">
+        <id property="movieId" column="movie_id"/>
+        <result property="title" column="title"/>
+        <result property="director" column="director"/>
+        <result property="actors" column="actors"/>
+        <result property="genre" column="genre"/>
+        <result property="duration" column="duration"/>
+        <result property="releaseDate" column="release_date"/>
+        <result property="posterUrl" column="poster_url"/>
+        <result property="rating" column="rating"/>
+        <result property="description" column="description"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="MovieMap">
+        SELECT * FROM movies WHERE movie_id = #{movieId}
+    </select>
+
+    <select id="selectAll" resultMap="MovieMap">
+        SELECT * FROM movies
+    </select>
+
+    <select id="getTopRatedMovies" resultMap="MovieMap">
+        SELECT * FROM movies ORDER BY rating DESC NULLS LAST LIMIT #{limit}
+    </select>
+
+    <select id="findMoviesPaginated" resultMap="MovieMap">
+        SELECT * FROM movies ORDER BY create_time DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase" resultMap="MovieMap">
+        SELECT * FROM movies WHERE LOWER(title) LIKE CONCAT('%', LOWER(#{title}), '%') OR LOWER(description) LIKE CONCAT('%', LOWER(#{description}), '%')
+    </select>
+
+</mapper>

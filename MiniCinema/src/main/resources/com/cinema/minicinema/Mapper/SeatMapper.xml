@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cinema.minicinema.Mapper.SeatMapper">
+
+    <resultMap id="SeatMap" type="com.cinema.minicinema.entity.Seat">
+        <id property="seatId" column="seat_id"/>
+        <result property="hallId" column="hall_id"/>
+        <result property="rowNum" column="row_num"/>
+        <result property="colNum" column="col_num"/>
+        <result property="seatLabel" column="seat_label"/>
+        <result property="seatStatus" column="seat_status"/>
+    </resultMap>
+
+    <select id="selectByHallId" resultMap="SeatMap">
+        SELECT * FROM seats WHERE hall_id = #{hallId}
+    </select>
+
+    <select id="selectByIds" resultMap="SeatMap">
+        SELECT * FROM seats WHERE seat_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

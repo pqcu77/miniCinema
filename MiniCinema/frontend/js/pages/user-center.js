@@ -7,18 +7,25 @@ if (!auth.isLoggedIn()) {
   window.location.href = 'login.html';
 }
 
-const switchTab = async (tab) => {
+const switchTab = async (tab, evt) => {
+  // support being called from inline onclick (evt may be undefined)
+  const eventObj = evt || window.event;
   document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.content-tab').forEach(el => el.classList.remove('active'));
 
-  event.target.classList.add('active');
-  document.getElementById(tab).classList.add('active');
+  if (eventObj && eventObj.target) eventObj.target.classList.add('active');
+  const targetEl = document.getElementById(tab);
+  if (targetEl) targetEl.classList.add('active');
 
   if (tab === 'info') loadUserInfo();
   else if (tab === 'password') loadPasswordForm();
   else if (tab === 'favorites') loadFavorites();
+  else if (tab === 'history') loadHistory();
   else if (tab === 'orders') loadOrders();
 };
+
+// expose switchTab for inline handlers
+window.switchTab = switchTab;
 
 const loadUserInfo = async () => {
   const user = storage.getUser();
@@ -112,34 +119,149 @@ const loadFavorites = async () => {
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
+    console.log('loadFavorites: calling api.getFavorites with token=', token);
     const response = await api.getFavorites(token);
+    console.log('loadFavorites: raw response=', response);
 
-    if (response.code === 200) {
-      const favorites = response.data || [];
-
-      if (favorites.length === 0) {
-        container.innerHTML = '<p>还没有收藏电影</p>';
-        return;
-      }
-
-      container.innerHTML = `
-        <h2>我的收藏</h2>
-        <div class="movies-grid" style="margin-top: 1.5rem;">
-          ${favorites.map(fav => `
-            <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${fav.movieId}'">
-              <div class="movie-poster">
-                <img src="${fav.posterUrl || 'https://via.placeholder.com/200x280'}" alt="">
-              </div>
-              <div class="movie-info">
-                <div class="movie-title">${fav.title}</div>
-                <div class="movie-rating">⭐ ${fav.rating || '8.0'}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+    // Normalize response into an array of favorite items
+    let favorites = [];
+    if (Array.isArray(response)) {
+      favorites = response;
+    } else if (response && typeof response === 'object') {
+      // common shapes: { code:1, data: { records: [...] } } or { data: [...] } or { records: [...] }
+      if (Array.isArray(response.data)) favorites = response.data;
+      else if (response.data && Array.isArray(response.data.records)) favorites = response.data.records;
+      else if (Array.isArray(response.records)) favorites = response.records;
+      else if (Array.isArray(response.data?.records)) favorites = response.data.records;
     }
+
+    // Ensure favorites is an array
+    if (!Array.isArray(favorites)) favorites = [];
+    console.log('loadFavorites: resolved favorites count=', favorites.length);
+
+    if (favorites.length === 0) {
+      container.innerHTML = '<p>还没有收藏电影</p>';
+      return;
+    }
+
+    // Build html with safe normalization of each favorite item so we can handle different key styles
+    const cards = [];
+    for (const raw of favorites) {
+      try {
+        // If api.getFavorites already returned normalized object (movieId, posterUrl, title), use it directly
+        const source = (raw && raw.movieId && (raw.posterUrl || raw.poster_url || raw.poster)) ? raw : raw.raw ?? raw;
+
+        const fav = {
+          movieId: source.movieId ?? source.movie_id ?? source.movieid ?? source.movie?.movieId ?? source.movie?.movie_id ?? source.id ?? source.movie?.id,
+          posterUrl: source.posterUrl ?? source.poster_url ?? source.posterurl ?? source.poster ?? source.movie?.posterUrl ?? source.movie?.poster_url ?? source.movie?.poster ?? source.movie?.poster_path,
+          title: source.title ?? source.name ?? source.movie?.title ?? source.movie?.name ?? source.movie?.original_title ?? '',
+          rating: source.rating ?? source.score ?? source.movie?.rating ?? source.movie?.vote_average ?? ''
+        };
+
+        // ensure we have an id
+        const idVal = fav.movieId ?? source.movieId ?? source.movie_id ?? source.id ?? (source.movie && (source.movie.movieId || source.movie.id));
+        if (!idVal) {
+          console.warn('loadFavorites: skipping item without movie id', raw);
+          continue;
+        }
+
+        const idForLink = encodeURIComponent(idVal);
+        const poster = fav.posterUrl || 'https://via.placeholder.com/200x280';
+        const title = fav.title || '';
+        const rating = fav.rating || 'N/A';
+
+        console.debug('loadFavorites: card ->', { id: idVal, poster, title, rating });
+
+        cards.push(`
+          <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${idForLink}'">
+            <div class="movie-poster">
+              <img src="${poster}" alt="${title}" onerror="this.src='https://via.placeholder.com/200x280'">
+            </div>
+            <div class="movie-info">
+              <div class="movie-title">${title}</div>
+              <div class="movie-rating">⭐ ${rating}</div>
+            </div>
+          </div>
+        `);
+      } catch (itemErr) {
+        console.error('loadFavorites: failed to process favorite item', itemErr, raw);
+        continue;
+      }
+    }
+
+    if (cards.length === 0) {
+      container.innerHTML = '<p>还没有收藏电影或数据格式不符</p>';
+      return;
+    }
+
+    const cardsHtml = cards.join('');
+
+    container.innerHTML = `
+      <h2>我的收藏</h2>
+      <div class="movies-grid" style="margin-top: 1.5rem;">
+        ${cardsHtml}
+      </div>
+    `;
+
   } catch (error) {
+    console.error('加载收藏失败', error);
+    container.innerHTML = '<p>加载失败</p>';
+  } finally {
+    // safety: if spinner still present and content not replaced, ensure we show a fallback quickly
+    if (container && container.querySelector('.spinner')) {
+      // Replace spinner after short timeout to avoid stuck UI
+      setTimeout(() => {
+        if (container && container.querySelector('.spinner')) {
+          console.warn('loadFavorites: spinner timeout, replacing with fallback');
+          container.innerHTML = '<p>加载超时，请稍后重试</p>';
+        }
+      }, 1000);
+    }
+  }
+};
+
+const loadHistory = async () => {
+  const token = storage.getToken();
+  const user = storage.getUser();
+  const container = document.getElementById('history');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  if (!user) {
+    container.innerHTML = '<p>请先登录以查看历史记录</p>';
+    return;
+  }
+
+  try {
+    const response = await api.get(`/api/movies/history`, { userId: user.userId, limit: 50 });
+    // api.get returns either normalized array or { code:1, data: [...] }
+    let movies = [];
+    if (Array.isArray(response)) movies = response;
+    else if (response && response.code === 1) movies = response.data || [];
+    else if (response && Array.isArray(response.data)) movies = response.data;
+
+    if (!Array.isArray(movies) || movies.length === 0) {
+      container.innerHTML = '<p>暂无历史记录</p>';
+      return;
+    }
+
+    container.innerHTML = `
+      <h2>历史记录</h2>
+      <div class="movies-grid" style="margin-top: 1.5rem;">
+        ${movies.map(m => `
+          <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${m.movieId || m.movie_id || m.id}'">
+            <div class="movie-poster">
+              <img src="${m.posterUrl || m.poster_url || m.poster || (m.movie && (m.movie.posterUrl || m.movie.poster_url)) || 'https://via.placeholder.com/200x280'}" alt="${m.title || ''}" onerror="this.src='https://via.placeholder.com/200x280'">
+            </div>
+            <div class="movie-info">
+              <div class="movie-title">${m.title || (m.movie && m.movie.title) || ''}</div>
+              <div class="movie-rating">⭐ ${m.rating || (m.movie && m.movie.rating) || 'N/A'}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (error) {
+    console.error('加载历史失败', error);
     container.innerHTML = '<p>加载失败</p>';
   }
 };
@@ -152,4 +274,3 @@ const loadOrders = () => {
 };
 
 loadUserInfo();
-

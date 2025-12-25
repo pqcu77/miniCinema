@@ -87,15 +87,26 @@ async function loadMovieDetail() {
 }
 
 async function checkFavorite() {
+    const user = userState.getUser();
+    if (!user) return;
     const token = userState.getToken();
-    if (!token) return;
-
     try {
-        const favorites = await api.getFavorites(token);
+        // Ensure we pass userId — backend expects it as request param
+        const favorites = await api.getFavorites(token, user.userId);
         const btn = document.getElementById('favoriteBtn');
         if (!btn) return;
 
-        if (favorites.data?.some(fav => fav.movieId == movieId)) {
+        // Normalize possible response shapes
+        let favList = [];
+        if (!favorites) favList = [];
+        else if (Array.isArray(favorites)) favList = favorites; // legacy
+        else if (favorites.data && Array.isArray(favorites.data.records)) favList = favorites.data.records;
+        else if (favorites.data && Array.isArray(favorites.data)) favList = favorites.data;
+        else if (favorites.records && Array.isArray(favorites.records)) favList = favorites.records;
+
+        const found = favList.some(fav => String(fav.movieId) === String(movieId) || String(fav.id) === String(movieId) || String(fav.movie_id) === String(movieId));
+
+        if (found) {
             btn.textContent = '✓ 已收藏';
             btn.dataset.isFavorite = 'true';
         } else {
@@ -104,6 +115,12 @@ async function checkFavorite() {
         }
     } catch (error) {
         console.error('检查收藏状态失败:', error);
+        // keep button in default state
+        const btn = document.getElementById('favoriteBtn');
+        if (btn) {
+            btn.textContent = '+ 收藏';
+            btn.dataset.isFavorite = 'false';
+        }
     }
 }
 
@@ -116,25 +133,41 @@ async function handleToggleFavorite() {
         return;
     }
 
+    const user = userState.getUser();
     const token = userState.getToken();
     const btn = document.getElementById('favoriteBtn');
+    if (!btn) return;
+
     const isFavorite = btn.dataset.isFavorite === 'true';
 
+    // disable button while processing
+    btn.disabled = true;
     try {
         if (isFavorite) {
-            await api.removeFavorite(token, movieId);
-            btn.textContent = '+ 收藏';
-            btn.dataset.isFavorite = 'false';
-            showMessage('取消收藏成功', 'success');
+            const resp = await api.removeFavorite(token, movieId, user.userId);
+            // accept multiple success shapes
+            if (resp && (resp.code === 1 || resp.success === true || resp.status === 'ok')) {
+                showMessage('取消收藏成功', 'success');
+            } else {
+                showMessage(resp?.msg || '取消收藏失败', 'error');
+            }
         } else {
-            await api.addFavorite(token, movieId);
-            btn.textContent = '✓ 已收藏';
-            btn.dataset.isFavorite = 'true';
-            showMessage('收藏成功', 'success');
+            const resp = await api.addFavorite(token, movieId, user.userId);
+            if (resp && (resp.code === 1 || resp.success === true || resp.status === 'ok')) {
+                showMessage('收藏成功', 'success');
+            } else {
+                showMessage(resp?.msg || '收藏失败', 'error');
+            }
         }
+
+        // refresh favorite status from server to keep consistent
+        await checkFavorite();
+
     } catch (error) {
         console.error('收藏操作失败:', error);
-        showMessage('收藏失败，请稍后再试', 'error');
+        showMessage('收藏操作失败，请稍后再试', 'error');
+    } finally {
+        btn.disabled = false;
     }
 }
 
@@ -152,16 +185,12 @@ function handleBuyTicket() {
 
 async function loadRecommendations(movieId, userId) {
     try {
-        let url = `${API_BASE_URL}/api/movies/${movieId}/recommendations?limit=6`;
-        if (userId) {
-            url += `&userId=${userId}`;
-        }
-
-        const response = await fetch(url);
-        const result = await response.json();
-
-        if (result.recommendations && Array.isArray(result.recommendations)) {
-            displayRecommendations(result.recommendations);
+        // backend provides a global recommend endpoint: GET /api/movies/recommend?limit=6
+        const response = await api.getRecommendedMovies(6);
+        if (response && response.code === 1 && response.data && Array.isArray(response.data.records)) {
+            displayRecommendations(response.data.records);
+        } else {
+            console.warn('推荐接口返回格式不正确', response);
         }
     } catch (error) {
         console.error('加载推荐失败:', error);
