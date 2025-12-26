@@ -6,10 +6,12 @@ const urlParams = new URLSearchParams(window.location.search);
 const movieId = parseInt(urlParams.get('movieId'));
 
 let movieInfo = null;
-let allCinemas = [];
+let allCinemas = [];  // 原始完整影院列表
+let filteredCinemas = [];  // 筛选后的影院列表
 let currentCinemaIndex = 0;
 let selectedDate = null;
 let availableDates = [];
+let filterKeyword = '';  // 当前筛选关键词
 
 // 加载电影基本信息
 async function loadMovieInfo() {
@@ -37,16 +39,99 @@ async function loadMovieInfo() {
     }
 }
 
-// 加载场次信息
-async function loadScreenings() {
+// // ✅ 修改后的 loadScreenings - 加载并筛选场次信息
+// async function loadScreenings(keyword = '') {
+//     try {
+//         let response;
+        
+//         if (keyword.trim()) {
+//             // ✅ 根据关键词类型决定使用哪个 API
+//             const searchType = detectSearchType(keyword);
+            
+//             if (searchType === 'city') {
+//                 // 只搜索城市
+//                 response = await fetch(`${API_BASE_URL}/cinemas/city?city=${encodeURIComponent(keyword)}`);
+//             } else if (searchType === 'city+district') {
+//                 // 城市+区域
+//                 const [city, district] = keyword.split(/[/\s]+/);
+//                 response = await fetch(`${API_BASE_URL}/cinemas/city?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`);
+//             } else {
+//                 // 模糊搜索影院名称
+//                 response = await fetch(`${API_BASE_URL}/cinemas/search?keyword=${encodeURIComponent(keyword)}`);
+//             }
+            
+//             const result = await response.json();
+            
+//             if (result.code === 1) {
+//                 const cinemas = result.data || [];
+//                 // ✅ 获取这些影院的场次信息
+//                 await loadScreeningsForCinemas(cinemas);
+//             } else {
+//                 showMessage(result.msg || '搜索失败', 'error');
+//                 filteredCinemas = [];
+//                 renderNoResults();
+//             }
+//         } else {
+//             // 没有筛选条件，加载所有场次
+//             response = await fetch(`${API_BASE_URL}/screenings/movie/${movieId}`);
+//             const result = await response.json();
+            
+//             if (result.code === 1) {
+//                 allCinemas = result.data.cinemas || [];
+//                 filteredCinemas = allCinemas;
+                
+//                 if (filteredCinemas.length === 0) {
+//                     document.getElementById('cinema-content').innerHTML = '<p class="no-data">😢 暂无场次信息</p>';
+//                     return;
+//                 }
+                
+//                 // 提取所有可用日期
+//                 extractAvailableDates();
+//                 // 初始化日期选择器
+//                 initDateInput();
+//                 // 渲染影院导航栏并显示第一个有场次的影院
+//                 renderCinemaTabs();
+//             } else {
+//                 showMessage(result.msg || '加载场次失败', 'error');
+//             }
+//         }
+//     } catch (error) {
+//         console.error('加载场次失败:', error);
+//         showMessage('加载场次失败', 'error');
+//     }
+// }
+
+// // ✅ 检测搜索类型
+// function detectSearchType(keyword) {
+//     const trimmed = keyword.trim();
+    
+//     // 检查是否包含分隔符（/ 或空格）
+//     if (trimmed.includes('/') || trimmed.includes(' ')) {
+//         return 'city+district';
+//     }
+    
+//     // 检查是否是常见城市名
+//     const cities = ['北京', '上海', '广州', '深圳', '测试市', 'Beijing', 'Shanghai'];
+//     if (cities.some(city => trimmed.includes(city))) {
+//         return 'city';
+//     }
+    
+//     // 默认为影院名称搜索
+//     return 'cinema-name';
+// }
+
+// ✅ 简化 loadScreenings - 只用于加载全部场次
+async function loadScreenings(keyword = '') {
     try {
+        // 没有筛选条件，加载所有场次
         const response = await fetch(`${API_BASE_URL}/screenings/movie/${movieId}`);
         const result = await response.json();
         
         if (result.code === 1) {
             allCinemas = result.data.cinemas || [];
+            filteredCinemas = allCinemas;
             
-            if (allCinemas.length === 0) {
+            if (filteredCinemas.length === 0) {
                 document.getElementById('cinema-content').innerHTML = '<p class="no-data">😢 暂无场次信息</p>';
                 return;
             }
@@ -66,21 +151,496 @@ async function loadScreenings() {
     }
 }
 
-// 提取所有可用日期
+// // ✅ 为指定影院加载场次信息
+// async function loadScreeningsForCinemas(cinemas) {
+//     try {
+//         // 获取影院ID列表
+//         const cinemaIds = cinemas.map(c => c.cinemaId);
+        
+//         // 获取完整场次数据
+//         const response = await fetch(`${API_BASE_URL}/screenings/movie/${movieId}`);
+//         const result = await response.json();
+        
+//         if (result.code === 1) {
+//             allCinemas = result.data.cinemas || [];
+            
+//             // ✅ 筛选出匹配的影院
+//             filteredCinemas = allCinemas.filter(cinema => 
+//                 cinemaIds.includes(cinema.cinemaId)
+//             );
+            
+//             if (filteredCinemas.length === 0) {
+//                 renderNoResults();
+//                 return;
+//             }
+            
+//             // 提取可用日期
+//             extractAvailableDates();
+//             // 初始化或更新日期选择器
+//             if (!selectedDate) {
+//                 initDateInput();
+//             }
+//             // 渲染影院标签
+//             renderCinemaTabs();
+//         }
+//     } catch (error) {
+//         console.error('加载场次失败:', error);
+//         showMessage('加载场次失败', 'error');
+//     }
+// }
+// ✅ 为指定影院加载场次信息（结合当前选中日期）
+async function loadScreeningsForCinemas(cinemas) {
+    try {
+        // 获取影院ID列表
+        const cinemaIds = cinemas.map(c => c.cinemaId);
+        
+        // 获取完整场次数据
+        const response = await fetch(`${API_BASE_URL}/screenings/movie/${movieId}`);
+        const result = await response.json();
+        
+        if (result.code === 1) {
+            allCinemas = result.data.cinemas || [];
+            
+            // ✅ 筛选出匹配的影院
+            let matchedCinemas = allCinemas.filter(cinema => 
+                cinemaIds.includes(cinema.cinemaId)
+            );
+            
+            // ✅ 如果已经选择了日期，进一步过滤出该日期有场次的影院
+            if (selectedDate) {
+                matchedCinemas = matchedCinemas.filter(cinema => {
+                    return cinema.screenings.some(screening => {
+                        const screeningDate = new Date(screening.screenTime);
+                        const screeningDateStr = formatDateToString(screeningDate);
+                        return screeningDateStr === selectedDate;
+                    });
+                });
+            }
+            
+            filteredCinemas = matchedCinemas;
+            
+            if (filteredCinemas.length === 0) {
+                // ✅ 显示更友好的提示
+                const dateText = selectedDate ? ` (${selectedDate})` : '';
+                showMessage(`所选影院在${dateText}暂无场次`, 'warning');
+                renderNoResults();
+                return;
+            }
+            
+            // 提取可用日期
+            extractAvailableDates();
+            
+            // 初始化或更新日期选择器
+            if (!selectedDate || !availableDates.includes(selectedDate)) {
+                // 如果当前日期不在可用日期中，自动选择第一个可用日期
+                selectedDate = availableDates[0];
+                initDateInput();
+            }
+            
+            // 渲染影院标签
+            renderCinemaTabs();
+        }
+    } catch (error) {
+        console.error('加载场次失败:', error);
+        showMessage('加载场次失败', 'error');
+    }
+}
+
+// ✅ 渲染无结果提示
+function renderNoResults() {
+    const contentContainer = document.getElementById('cinema-content');
+    const tabsContainer = document.getElementById('cinema-tabs');
+    
+    contentContainer.innerHTML = '<p class="no-data">😢 未找到符合条件的影院</p>';
+    tabsContainer.innerHTML = '';
+    
+    // 隐藏滚动按钮
+    document.getElementById('cinema-scroll-left').style.display = 'none';
+    document.getElementById('cinema-scroll-right').style.display = 'none';
+}
+
+// ✅ 修改 extractAvailableDates - 从筛选后的影院提取日期
 function extractAvailableDates() {
     const dateSet = new Set();
     
-    allCinemas.forEach(cinema => {
+    filteredCinemas.forEach(cinema => {
         cinema.screenings.forEach(screening => {
             const date = new Date(screening.screenTime);
-            const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            const dateStr = formatDateToString(date);
             dateSet.add(dateStr);
         });
     });
     
     availableDates = Array.from(dateSet).sort();
-    selectedDate = availableDates[0]; // 默认选择第一个日期
+    
+    // 如果当前选中的日期不在新的可用日期中，选择第一个
+    if (!availableDates.includes(selectedDate)) {
+        selectedDate = availableDates[0];
+    }
 }
+
+// // ✅ 初始化筛选功能
+// function initCinemaFilter() {
+//     const filterInput = document.getElementById('cinema-filter-input');
+//     const clearBtn = document.getElementById('filter-clear-btn');
+    
+//     // 输入事件 - 实时搜索
+//     let searchTimeout;
+//     filterInput.addEventListener('input', (e) => {
+//         const keyword = e.target.value.trim();
+        
+//         // 显示/隐藏清除按钮
+//         clearBtn.style.display = keyword ? 'flex' : 'none';
+        
+//         // 防抖搜索
+//         clearTimeout(searchTimeout);
+//         searchTimeout = setTimeout(() => {
+//             filterKeyword = keyword;
+//             loadScreenings(keyword);
+//         }, 500);
+//     });
+    
+//     // 清除按钮
+//     clearBtn.addEventListener('click', () => {
+//         filterInput.value = '';
+//         clearBtn.style.display = 'none';
+//         filterKeyword = '';
+//         loadScreenings('');
+//     });
+    
+//     // 回车键搜索
+//     filterInput.addEventListener('keypress', (e) => {
+//         if (e.key === 'Enter') {
+//             const keyword = e.target.value.trim();
+//             filterKeyword = keyword;
+//             loadScreenings(keyword);
+//         }
+//     });
+// }
+
+// ✅ 初始化筛选功能（三个独立输入框）
+function initCinemaFilter() {
+    const cityInput = document.getElementById('city-filter');
+    const districtInput = document.getElementById('district-filter');
+    const cinemaNameInput = document.getElementById('cinema-name-filter');
+    const clearAllBtn = document.getElementById('filter-clear-all-btn');
+    
+    let searchTimeout;
+    
+    // 执行筛选
+    const performFilter = () => {
+        const city = cityInput.value.trim();
+        const district = districtInput.value.trim();
+        const cinemaName = cinemaNameInput.value.trim();
+        
+        // 显示/隐藏清空按钮
+        //const hasFilter = city || district || cinemaName;
+        //clearAllBtn.style.display = hasFilter ? 'block' : 'none';
+        clearAllBtn.style.display = 'block' ;
+
+        // ✅ 根据输入组合决定筛选逻辑
+        if (city && district) {
+            // 城市 + 区域
+            loadScreeningsByLocation(city, district);
+        } else if (city) {
+            // 只有城市
+            loadScreeningsByCity(city);
+        } else if (cinemaName) {
+            // 只有影院名称（忽略区域）
+            loadScreeningsByName(cinemaName);
+        } else if (district && !city) {
+            // 只有区域，不允许
+            showMessage('请先输入城市', 'warning');
+        } else {
+            // 清空所有筛选，显示全部
+            loadScreenings('');
+        }
+    };
+    
+    // 城市输入事件
+    cityInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performFilter, 500);
+    });
+    
+    // 区域输入事件
+    districtInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performFilter, 500);
+    });
+    
+    // 影院名称输入事件
+    cinemaNameInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performFilter, 500);
+    });
+    
+    // 回车键触发搜索
+    [cityInput, districtInput, cinemaNameInput].forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                performFilter();
+            }
+        });
+    });
+    
+    // 清空所有筛选
+    clearAllBtn.addEventListener('click', () => {
+        cityInput.value = '';
+        districtInput.value = '';
+        cinemaNameInput.value = '';
+        //clearAllBtn.style.display = 'none';
+        loadScreenings('');
+    });
+}
+
+// // ✅ 根据城市筛选
+// async function loadScreeningsByCity(city) {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/cinemas/city?city=${encodeURIComponent(city)}`);
+//         const result = await response.json();
+        
+//         if (result.code === 1) {
+//             const cinemas = result.data || [];
+//             await loadScreeningsForCinemas(cinemas);
+//         } else {
+//             showMessage(result.msg || '未找到该城市的影院', 'error');
+//             renderNoResults();
+//         }
+//     } catch (error) {
+//         console.error('加载影院失败:', error);
+//         showMessage('加载影院失败', 'error');
+//     }
+// }
+
+// // ✅ 根据城市+区域筛选
+// async function loadScreeningsByLocation(city, district) {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/cinemas/location?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`);
+//         const result = await response.json();
+        
+//         if (result.code === 1) {
+//             const cinemas = result.data || [];
+//             await loadScreeningsForCinemas(cinemas);
+//         } else {
+//             showMessage(result.msg || '未找到该区域的影院', 'error');
+//             renderNoResults();
+//         }
+//     } catch (error) {
+//         console.error('加载影院失败:', error);
+//         showMessage('加载影院失败', 'error');
+//     }
+// }
+
+// // ✅ 根据影院名称筛选
+// async function loadScreeningsByName(keyword) {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/cinemas/search?keyword=${encodeURIComponent(keyword)}`);
+//         const result = await response.json();
+        
+//         if (result.code === 1) {
+//             const cinemas = result.data || [];
+//             await loadScreeningsForCinemas(cinemas);
+//         } else {
+//             showMessage(result.msg || '未找到匹配的影院', 'error');
+//             renderNoResults();
+//         }
+//     } catch (error) {
+//         console.error('加载影院失败:', error);
+//         showMessage('加载影院失败', 'error');
+//     }
+// }
+
+// ✅ 根据城市筛选
+async function loadScreeningsByCity(city) {
+    try {
+        // 1. 先获取该城市的所有影院
+        const response = await fetch(`${API_BASE_URL}/cinemas/city?city=${encodeURIComponent(city)}`);
+        const result = await response.json();
+        
+        if (result.code === 1) {
+            const cinemas = result.data || [];
+            
+            if (cinemas.length === 0) {
+                showMessage(`未找到城市 "${city}" 的影院`, 'warning');
+                renderNoResults();
+                return;
+            }
+            
+            // 2. 加载这些影院的场次（会自动结合当前日期过滤）
+            await loadScreeningsForCinemas(cinemas);
+        } else {
+            showMessage(result.msg || '未找到该城市的影院', 'error');
+            renderNoResults();
+        }
+    } catch (error) {
+        console.error('加载影院失败:', error);
+        showMessage('加载影院失败', 'error');
+    }
+}
+
+// ✅ 根据城市+区域筛选（带智能降级）
+async function loadScreeningsByLocation(city, district) {
+    try {
+        // 1. 先尝试精确查询城市+区域
+        const response = await fetch(`${API_BASE_URL}/cinemas/location?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`);
+        const result = await response.json();
+        
+        if (result.code === 1 && result.data && result.data.length > 0) {
+            // ✅ 查询成功
+            const cinemas = result.data;
+            await loadScreeningsForCinemas(cinemas);
+        } else {
+            // 2. 区域查询失败，降级为只查城市
+            console.log(`区域 "${district}" 无结果，降级为城市查询`);
+            showMessage(`"${district}" 区域暂无影院，显示 "${city}" 的所有影院`, 'info');
+            
+            // ✅ 降级查询
+            await loadScreeningsByCity(city);
+        }
+    } catch (error) {
+        console.error('查询失败，尝试降级:', error);
+        
+        // 3. 网络错误也尝试降级
+        try {
+            await loadScreeningsByCity(city);
+        } catch (fallbackError) {
+            showMessage('加载影院失败', 'error');
+            renderNoResults();
+        }
+    }
+}
+
+// ✅ 根据影院名称筛选
+async function loadScreeningsByName(keyword) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/cinemas/search?keyword=${encodeURIComponent(keyword)}`);
+        const result = await response.json();
+        
+        if (result.code === 1) {
+            const cinemas = result.data || [];
+            
+            if (cinemas.length === 0) {
+                showMessage(`未找到包含 "${keyword}" 的影院`, 'warning');
+                renderNoResults();
+                return;
+            }
+            
+            await loadScreeningsForCinemas(cinemas);
+        } else {
+            showMessage(result.msg || '未找到匹配的影院', 'error');
+            renderNoResults();
+        }
+    } catch (error) {
+        console.error('加载影院失败:', error);
+        showMessage('加载影院失败', 'error');
+    }
+}
+
+// // 提取所有可用日期
+// function extractAvailableDates() {
+//     const dateSet = new Set();
+    
+//     allCinemas.forEach(cinema => {
+//         cinema.screenings.forEach(screening => {
+//             const date = new Date(screening.screenTime);
+//             const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+//             dateSet.add(dateStr);
+//         });
+//     });
+    
+//     availableDates = Array.from(dateSet).sort();
+//     selectedDate = availableDates[0]; // 默认选择第一个日期
+// }
+
+// // ✅ 初始化日期输入框（使用 Flatpickr）
+// function initDateInput() {
+//     const dateInput = document.getElementById('date-input');
+//     const dateText = document.getElementById('date-text');
+//     const wrapper = document.querySelector('.date-input-wrapper');
+    
+//     if (availableDates.length === 0) {
+//         return;
+//     }
+    
+//     // 设置日期范围
+//     const today = new Date();
+//     today.setHours(0, 0, 0, 0);
+    
+//     const maxDate = new Date(availableDates[availableDates.length - 1]);
+//     maxDate.setDate(maxDate.getDate() + 60);
+    
+
+    
+//     // 更新显示文本
+//     updateDateText(selectedDate);
+    
+//     // ✅ 初始化 Flatpickr
+//     const fp = flatpickr(dateInput, {
+//         locale: 'zh',
+//         dateFormat: 'Y-m-d',
+//         defaultDate: selectedDate,
+//         minDate: today,
+//         maxDate: maxDate,
+//         onChange: function(selectedDates, dateStr) {
+//             if (dateStr) {
+//                 selectDate(dateStr);
+//             }
+//         },
+//         onReady: function(selectedDates, dateStr, instance) {
+//             // 点击 wrapper 时打开日历
+//             wrapper.addEventListener('click', () => {
+//                 instance.open();
+//             });
+            
+//             // ✅ 标记日期类型
+//             setTimeout(markDateTypes, 100);
+//         },
+//         onOpen: function() {
+//             // ✅ 每次打开都重新标记
+//             setTimeout(markDateTypes, 100);
+//         },
+//         onMonthChange: function() {
+//             // ✅ 切换月份后重新标记
+//             setTimeout(markDateTypes, 100);
+//         },
+//         onYearChange: function() {
+//             setTimeout(markDateTypes, 100);
+//         },
+//         onDayCreate: function(dObj, dStr, fp, dayElem) {
+//             // ✅ 在每个日期创建时标记
+//             const date = new Date(dayElem.dateObj);
+//             date.setHours(0, 0, 0, 0);
+//             const dateStr = formatDateToString(date);
+    
+//             const today = new Date();
+//             today.setHours(0, 0, 0, 0);
+    
+//             // ✅ 只标记未来的日期
+//             if (date >= today) {
+//                 if (availableDates.includes(dateStr)) {
+//                     dayElem.classList.add('has-screenings');
+//                 } else {
+//                     dayElem.classList.add('no-screenings');
+//                 }
+//             }
+//             // ✅ 过期日期由 Flatpickr 自动处理为 disabled
+//         }
+//     });
+    
+//     // 绑定前后按钮事件
+//     document.getElementById('prev-date').onclick = () => {
+//         navigateDate(-1);
+//         fp.setDate(selectedDate);
+//     };
+    
+//     document.getElementById('next-date').onclick = () => {
+//         navigateDate(1);
+//         fp.setDate(selectedDate);
+//     };
+// }
+
 
 // ✅ 初始化日期输入框（使用 Flatpickr）
 function initDateInput() {
@@ -96,7 +656,8 @@ function initDateInput() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const maxDate = new Date(availableDates[availableDates.length - 1]);
+    // ✅ 修复：使用固定的未来日期范围
+    const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 30);
     
     // 更新显示文本
@@ -108,19 +669,45 @@ function initDateInput() {
         dateFormat: 'Y-m-d',
         defaultDate: selectedDate,
         minDate: today,
-        maxDate: maxDate,
-        // ✅ 高亮有场次的日期
-        enable: availableDates.map(d => d),
+        maxDate: maxDate,  // ✅ 使用固定范围
+        // ❌ 删除 enable 配置，不限制可选日期
         onChange: function(selectedDates, dateStr) {
             if (dateStr) {
                 selectDate(dateStr);
             }
         },
         onReady: function(selectedDates, dateStr, instance) {
-            // 点击 wrapper 时打开日历
             wrapper.addEventListener('click', () => {
                 instance.open();
             });
+            setTimeout(markDateTypes, 100);
+        },
+        onOpen: function() {
+            setTimeout(markDateTypes, 100);
+        },
+        onMonthChange: function() {
+            setTimeout(markDateTypes, 100);
+        },
+        onYearChange: function() {
+            setTimeout(markDateTypes, 100);
+        },
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            const date = new Date(dayElem.dateObj);
+            date.setHours(0, 0, 0, 0);
+            const dateStr = formatDateToString(date);
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // ✅ 标记所有未来的日期（不依赖 disabled 状态）
+            if (date >= today) {
+                if (availableDates.includes(dateStr)) {
+                    dayElem.classList.add('has-screenings');
+                } else {
+                    dayElem.classList.add('no-screenings');
+                }
+            }
+            // ✅ 过去的日期会被 Flatpickr 自动标记为 disabled
         }
     });
     
@@ -134,6 +721,42 @@ function initDateInput() {
         navigateDate(1);
         fp.setDate(selectedDate);
     };
+}
+
+// ✅ 标记不同类型的日期
+function markDateTypes() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // ✅ 获取所有日期单元格（包括其他月份的日期）
+    const dayElements = document.querySelectorAll('.flatpickr-day');
+    
+    dayElements.forEach(dayEl => {
+        // 获取日期对象
+        const dateObj = dayEl.dateObj;
+        if (!dateObj) return;
+        
+        const date = new Date(dateObj);
+        date.setHours(0, 0, 0, 0);
+        
+        const dateStr = formatDateToString(date);
+        
+        // 移除所有自定义类
+        dayEl.classList.remove('has-screenings', 'no-screenings');
+        
+        // ✅ 判断日期类型（不区分是否为其他月份）
+        if (date < today) {
+            // 已过期的日期（由 Flatpickr 自动标记为 disabled）
+            // 不需要额外处理
+        } else if (dateObj >= today) {
+            // ✅ 未来日期：根据场次情况标记
+            if (availableDates.includes(dateStr)) {
+                dayEl.classList.add('has-screenings');
+            } else {
+                dayEl.classList.add('no-screenings');
+            }
+        }
+    });
 }
 
 // ✅ 格式化日期为字符串 (YYYY-MM-DD)
@@ -176,7 +799,21 @@ function updateDateText(dateStr) {
     dateText.textContent = `${displayText} ${weekDay}`;
 }
 
-// 选择日期
+// // 选择日期
+// function selectDate(dateStr) {
+//     selectedDate = dateStr;
+    
+//     // 更新日期输入框的值
+//     const dateInput = document.getElementById('date-input');
+//     dateInput.value = dateStr;
+    
+//     // 更新显示文本
+//     updateDateText(dateStr);
+    
+//     // 重新渲染影院标签，并自动选择第一个有场次的影院
+//     renderCinemaTabs();
+// }
+// ✅ 选择日期
 function selectDate(dateStr) {
     selectedDate = dateStr;
     
@@ -187,8 +824,28 @@ function selectDate(dateStr) {
     // 更新显示文本
     updateDateText(dateStr);
     
-    // 重新渲染影院标签，并自动选择第一个有场次的影院
-    renderCinemaTabs();
+    // ✅ 如果当前有筛选条件，需要重新过滤影院
+    const cityInput = document.getElementById('city-filter');
+    const districtInput = document.getElementById('district-filter');
+    const cinemaNameInput = document.getElementById('cinema-name-filter');
+    
+    const city = cityInput?.value.trim();
+    const district = districtInput?.value.trim();
+    const cinemaName = cinemaNameInput?.value.trim();
+    
+    if (city || district || cinemaName) {
+        // ✅ 有筛选条件，重新执行筛选（会自动结合新日期）
+        if (city && district) {
+            loadScreeningsByLocation(city, district);
+        } else if (city) {
+            loadScreeningsByCity(city);
+        } else if (cinemaName) {
+            loadScreeningsByName(cinemaName);
+        }
+    } else {
+        // ✅ 没有筛选条件，正常渲染
+        renderCinemaTabs();
+    }
 }
 
 // 日期导航
@@ -232,7 +889,7 @@ function renderCinemaTabs() {
     tabsContainer.innerHTML = '';
     
     // 过滤出有当前日期场次的影院
-    const cinemasWithScreenings = allCinemas.filter(cinema => {
+    const cinemasWithScreenings = filteredCinemas.filter(cinema => {
         return cinema.screenings.some(screening => {
             const screeningDate = new Date(screening.screenTime);
             const screeningDateStr = formatDateToString(screeningDate);
@@ -273,8 +930,8 @@ function renderCinemaTabs() {
         tab.className = 'cinema-tab';
         tab.textContent = cinema.cinemaName;
         
-        // 绑定点击事件，传入在 allCinemas 中的索引
-        const originalIndex = allCinemas.indexOf(cinema);
+        // 绑定点击事件，传入在 filteredCinemas 中的索引
+        const originalIndex = filteredCinemas.indexOf(cinema);
         tab.onclick = () => {
             switchCinema(originalIndex);
             // ✅ 点击后滚动到该标签
@@ -297,7 +954,7 @@ function renderCinemaTabs() {
     }
     
     // 自动显示第一个有场次的影院
-    const firstCinemaIndex = allCinemas.indexOf(cinemasWithScreenings[0]);
+    const firstCinemaIndex = filteredCinemas.indexOf(cinemasWithScreenings[0]);
     switchCinema(firstCinemaIndex);
 }
 
@@ -351,8 +1008,8 @@ function switchCinema(index) {
     // 更新导航栏激活状态
     const tabs = document.querySelectorAll('.cinema-tab');
     tabs.forEach((tab) => {
-        const cinema = allCinemas.find(c => c.cinemaName === tab.textContent);
-        if (cinema && allCinemas.indexOf(cinema) === index) {
+        const cinema = filteredCinemas.find(c => c.cinemaName === tab.textContent);
+        if (cinema && filteredCinemas.indexOf(cinema) === index) {
             tab.classList.add('active');
         } else {
             tab.classList.remove('active');
@@ -360,7 +1017,7 @@ function switchCinema(index) {
     });
     
     // 渲染当前影院的场次
-    renderCinemaScreenings(allCinemas[index]);
+    renderCinemaScreenings(filteredCinemas[index]);
 }
 
 // 渲染当前影院的场次列表
@@ -484,6 +1141,7 @@ window.onload = async function() {
     
     await loadMovieInfo();
     await loadScreenings();
+    initCinemaFilter(); 
 };
 
 // ✅ 查看影院详情
@@ -572,9 +1230,7 @@ function showCinemaDetailsModal(cinema) {
             </div>
         </div>
         
-        <div class="cinema-modal-footer">
-            <button class="btn-close" onclick="this.closest('.cinema-modal-overlay').remove()">关闭</button>
-        </div>
+        
     `;
     
     overlay.appendChild(modal);
