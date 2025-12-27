@@ -34,11 +34,17 @@ public interface CinemaMapper {
     @Select("SELECT * FROM cinemas WHERE city = #{city} AND district = #{district} ORDER BY name")
     List<Cinema> selectByCityAndDistrict(@Param("city") String city, @Param("district") String district);
 
+    // /**
+    // * 模糊搜索影院（按名称或地址）
+    // */
+    // @Select("SELECT * FROM cinemas WHERE name LIKE CONCAT('%', #{keyword}, '%') "
+    // +
+    // "OR address LIKE CONCAT('%', #{keyword}, '%') ORDER BY name")
+    // List<Cinema> searchByKeyword(String keyword);
     /**
-     * 模糊搜索影院（按名称或地址）
+     * ✅ 模糊搜索影院（只按名称）
      */
-    @Select("SELECT * FROM cinemas WHERE name LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR address LIKE CONCAT('%', #{keyword}, '%') ORDER BY name")
+    @Select("SELECT * FROM cinemas WHERE name LIKE CONCAT('%', #{keyword}, '%') ORDER BY name")
     List<Cinema> searchByKeyword(String keyword);
 
     /**

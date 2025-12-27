@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <!-- ✅ 引入 Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-</head>
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css"> -->
 
 
 
@@ -45,6 +44,41 @@
             <!-- 标题栏：左侧标题 + 右侧日期选择 -->
             <div class="section-header">
                 <h3 class="section-title">影院和场次</h3>
+
+                <!-- ✅ 三个独立的筛选输入框 -->
+                <div class="cinema-filters-container">
+                    <!-- 城市筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">🏙️</span>
+                        <input type="text" 
+                            id="city-filter" 
+                            class="filter-input"
+                            placeholder="城市(完整名称)(如: 北京市)">
+                    </div>
+        
+                    <!-- 区域筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">📍</span>
+                        <input type="text" 
+                            id="district-filter" 
+                            class="filter-input"
+                            placeholder="区域(完整名称)(如: 朝阳区)">
+                    </div>
+        
+                    <!-- 影院名称筛选 -->
+                    <div class="filter-input-wrapper">
+                        <span class="filter-icon">🎬</span>
+                        <input type="text" 
+                            id="cinema-name-filter" 
+                            class="filter-input"
+                            placeholder="影院名称">
+                        
+                    </div>
+                    <button class="filter-clear-all-btn" id="filter-clear-all-btn">
+                        清空
+                    </button>
+                </div>
+
                 <div class="date-selector-input">
                     <button class="date-nav-btn" id="prev-date">◀</button>
                     
