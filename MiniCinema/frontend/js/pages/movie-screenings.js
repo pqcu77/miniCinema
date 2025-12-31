@@ -123,24 +123,30 @@ async function loadMovieInfo() {
 // ✅ 简化 loadScreenings - 只用于加载全部场次
 async function loadScreenings(keyword = '') {
     try {
-        // 没有筛选条件，加载所有场次
         const response = await fetch(`${API_BASE_URL}/screenings/movie/${movieId}`);
         const result = await response.json();
+        
+        console.log('📡 后端返回的完整数据:', result);
         
         if (result.code === 1) {
             allCinemas = result.data.cinemas || [];
             filteredCinemas = allCinemas;
+            
+            // ✅ 检查第一个影院的第一个场次
+            if (allCinemas.length > 0 && allCinemas[0].screenings.length > 0) {
+                const firstScreening = allCinemas[0].screenings[0];
+                console.log('🔍 第一个场次的数据结构:', firstScreening);
+                console.log('🔍 包含的字段:', Object.keys(firstScreening));
+                console.log('🔍 screeningId 值:', firstScreening.screeningId);
+            }
             
             if (filteredCinemas.length === 0) {
                 document.getElementById('cinema-content').innerHTML = '<p class="no-data">😢 暂无场次信息</p>';
                 return;
             }
             
-            // 提取所有可用日期
             extractAvailableDates();
-            // 初始化日期选择器
             initDateInput();
-            // 渲染影院导航栏并显示第一个有场次的影院
             renderCinemaTabs();
         } else {
             showMessage(result.msg || '加载场次失败', 'error');
@@ -1067,6 +1073,15 @@ function createScreeningRow(screening) {
     const row = document.createElement('div');
     row.className = 'screening-row';
     
+    // ✅ 添加调试日志
+    console.log('📦 创建场次行，screening对象:', screening);
+    console.log('📦 screeningId:', screening.screeningId);
+    
+    // ✅ 验证 screeningId 是否存在
+    if (!screening.screeningId) {
+        console.error('❌ 错误：screening对象缺少screeningId字段！', screening);
+    }
+    
     // 格式化时间
     const screenTime = new Date(screening.screenTime);
     const timeStr = `${screenTime.getHours().toString().padStart(2, '0')}:${screenTime.getMinutes().toString().padStart(2, '0')}`;
@@ -1090,17 +1105,29 @@ function createScreeningRow(screening) {
         </div>
         <div class="screening-action-col">
             <button class="buy-btn" 
-                    data-screening-id="${screening.screeningId}"
+                    data-screening-id="${screening.screeningId || 'undefined'}"
                     ${screening.status !== '可售' ? 'disabled' : ''}>
                 ${getButtonText(screening.status)}
             </button>
         </div>
     `;
     
-    // 绑定按钮事件
+    // ✅ 绑定按钮事件时再次验证
     const btn = row.querySelector('.buy-btn');
     if (screening.status === '可售') {
-        btn.onclick = () => goToSeatSelection(screening.screeningId);
+        btn.onclick = () => {
+            console.log('🎯 点击选座购票按钮');
+            console.log('   screening对象:', screening);
+            console.log('   screeningId:', screening.screeningId);
+            
+            // ✅ 确保 screeningId 有效
+            if (!screening.screeningId) {
+                showMessage('场次ID无效，无法选座', 'error');
+                return;
+            }
+            
+            goToSeatSelection(screening.screeningId);
+        };
     }
     
     return row;
@@ -1122,11 +1149,25 @@ function getButtonText(status) {
     }
 }
 
-// 跳转到选座页面（暂时显示开发中）
+// 跳转到选座页面
 function goToSeatSelection(screeningId) {
-    showMessage('选座功能开发中，敬请期待！🎬', 'info');
-    // 未来实现时取消注释下面这行
-    // window.location.href = `seat-selection.html?screeningId=${screeningId}`;
+    console.log('🔗 准备跳转到选座页面');
+    console.log('   接收到的 screeningId:', screeningId);
+    console.log('   screeningId 类型:', typeof screeningId);
+    console.log('   screeningId 有效性:', screeningId && screeningId > 0);
+    
+    // ✅ 严格验证 screeningId
+    if (!screeningId || screeningId === 'undefined' || isNaN(screeningId) || screeningId <= 0) {
+        console.error('❌ 场次ID无效:', screeningId);
+        showMessage('场次ID无效，无法选座', 'error');
+        return;
+    }
+    
+    // ✅ 构建跳转URL
+    const url = `seat-selection.html?screeningId=${screeningId}`;
+    console.log('✅ 跳转URL:', url);
+    
+    window.location.href = url;
 }
 
 // 页面加载时初始化

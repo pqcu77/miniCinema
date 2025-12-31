@@ -22,10 +22,12 @@ public class CorsConfig implements WebMvcConfigurer {
                 // 允许的 HTTP 方法
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 // 允许的请求头 - 明确列出而不是用 *
-                .allowedHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept")
+                .allowedHeaders("*")
+                //.allowedHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept")
                 // 允许证书（cookies）
                 .allowCredentials(true)
                 // 缓存预检请求的结果，单位秒
-                .maxAge(3600);
+                .maxAge(3600)
+                .exposedHeaders("Authorization", "Content-Type", "X-Total-Count");
     }
 }

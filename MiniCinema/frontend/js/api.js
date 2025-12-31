@@ -31,6 +31,15 @@ const api = {
     }).then(res => res.json());
   },
 
+  // ✅ 添加 DELETE 方法
+  delete: (url) => {
+    return fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(res => res.json());
+  },
+
   // 电影相关 - 搜索和推荐
   searchMovies: (keyword = '', genre = '', page = 1, pageSize = 8) => {
     return api.get('/api/movies', { keyword, genre, page, pageSize });
@@ -113,6 +122,61 @@ const api = {
   getMovieDetail: (movieId) => {
     // backend maps GET /api/movies/{movieId}
     return api.get(`/api/movies/${movieId}`);
+  },
+
+  // 购物车相关
+  cart: {
+      getCart: () => request('/api/cart', 'GET'),
+      addToCart: (data) => request('/api/cart', 'POST', data),
+      removeFromCart: (itemId) => request(`/api/cart/${itemId}`, 'DELETE'),
+      clearCart: () => request('/api/cart/clear', 'DELETE')
+  },
+
+  // 订单相关
+  order: {
+      createOrder: (data) => request('/api/orders', 'POST', data),
+      getOrderById: (orderId) => request(`/api/orders/${orderId}`, 'GET'),
+      getUserOrders: () => request('/api/orders/user', 'GET'),
+      cancelOrder: (orderId) => request(`/api/orders/${orderId}/cancel`, 'PUT')
+  },
+
+  // 支付相关
+  payment: {
+      createPayment: (data) => request('/api/payments', 'POST', data),
+      confirmPayment: (orderId) => request(`/api/payments/${orderId}/confirm`, 'PUT'),
+      getPaymentStatus: (paymentId) => request(`/api/payments/${paymentId}`, 'GET')
+  },
+
+  // 票据相关
+  ticket: {
+      // 获取用户票据
+      getUserTickets: (userId) => {
+        // ✅ 如果没有传 userId，从 userState 获取
+        if (!userId) {
+          try {
+            const user = userState?.getUser?.();
+            userId = user?.userId;
+          } catch (e) {
+            console.error('获取用户信息失败:', e);
+          }
+        }
+        
+        if (!userId) {
+          return Promise.reject(new Error('用户未登录'));
+        }
+        
+        return api.get(`/api/ticket/user/${userId}`);
+      },
+      
+      // 根据 ID 获取票据
+      getTicketById: (ticketId) => {
+        return api.get(`/api/ticket/${ticketId}`);
+      },
+      
+      // 使用票据
+      useTicket: (ticketId) => {
+        return api.put(`/api/ticket/${ticketId}/use`);
+      }
   },
 
   // 收藏相关

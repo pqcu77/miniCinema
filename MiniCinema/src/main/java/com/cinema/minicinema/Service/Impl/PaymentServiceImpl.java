@@ -2,6 +2,7 @@ package com.cinema.minicinema.Service.Impl;
 
 import com.cinema.minicinema.Mapper.OrderMapper;
 import com.cinema.minicinema.Mapper.PaymentMapper;
+import com.cinema.minicinema.Mapper.UserMapper;
 import com.cinema.minicinema.Service.PaymentService;
 import com.cinema.minicinema.Service.TicketService;
 import com.cinema.minicinema.common.exception.BusinessException;
@@ -11,7 +12,6 @@ import com.cinema.minicinema.entity.Payment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,6 +22,9 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Autowired
     private PaymentMapper paymentMapper;
+    
+    @Autowired
+    private UserMapper userMapper;
     
     @Autowired
     private TicketService ticketService;
@@ -38,10 +41,12 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException("订单状态不允许支付");
         }
         
+        // ✅ 只支持 alipay 和 wechat（删除了 balance）
         if (!"alipay".equals(paymentMethod) && !"wechat".equals(paymentMethod)) {
             throw new BusinessException("不支持的支付方式");
         }
         
+        // ✅ 生成交易号
         String transactionId = "TRX" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 8);
         
         Payment payment = new Payment();
@@ -87,7 +92,7 @@ public class PaymentServiceImpl implements PaymentService {
             order.setPayTime(LocalDateTime.now());
             orderMapper.updatePayTime(order.getOrderId(), "paid");
             
-            // 【关键】5. 支付成功后，自动生成电子票
+            // 5. 支付成功后，自动生成电子票
             ticketService.generateTickets(order.getOrderId());
         }
     }

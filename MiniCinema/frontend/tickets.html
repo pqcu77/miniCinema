@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的票夹 - 迷你影院</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- ✅ 删除 tickets.css 引用，样式已在 style.css 中 -->
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <header>
+        <div class="header-left">
+            <h1 onclick="window.location.href='index.html'" style="cursor: pointer;">🎬 MiniCinema</h1>
+        </div>
+        <nav class="header-nav">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="movies.html" class="nav-btn">电影</a>
+            <a href="cart.html" class="nav-btn">购物车</a>
+            <a href="tickets.html" class="nav-btn active">我的票夹</a>
+        </nav>
+        <div class="header-right">
+            <span id="welcomeText">欢迎访客</span>
+            <a href="user-center.html">个人中心</a>
+            <a href="#" id="logoutBtn">退出登录</a>
+        </div>
+    </header>
+
+    <div class="container tickets-container">
+        <div class="tickets-header-section">
+            <h1 class="tickets-page-title">🎟️ 我的票夹</h1>
+            <p class="tickets-subtitle">查看您的已购电影票</p>
+        </div>
+
+        <div class="tickets-tabs">
+            <button class="tab-btn active" data-status="UNUSED">未使用</button>
+            <button class="tab-btn" data-status="USED">已使用</button>
+            <button class="tab-btn" data-status="EXPIRED">已过期</button>
+        </div>
+
+        <div id="ticketsContent" class="tickets-content">
+            <div id="ticketsList" class="tickets-list">
+                <!-- 票据列表 -->
+            </div>
+
+            <div class="tickets-empty" id="emptyTickets" style="display: none;">
+                <div class="empty-content">
+                    <div class="empty-icon">🎬</div>
+                    <p class="empty-title">暂无票据</p>
+                    <p class="empty-desc">还没有购买任何电影票</p>
+                    <a href="movies.html" class="btn btn-primary">去选电影</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 票据详情弹窗 -->
+    <div id="ticketModal" class="ticket-modal-overlay">
+        <div class="ticket-modal-container">
+            <button class="ticket-modal-close" onclick="document.getElementById('ticketModal').style.display='none'">
+                <span>×</span>
+            </button>
+            <div id="ticketDetail" class="ticket-modal-body">
+                <!-- 票据详情 -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/pages/tickets.js"></script>
+</body>
+
+</html>

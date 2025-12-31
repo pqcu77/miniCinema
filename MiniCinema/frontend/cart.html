@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车 - 迷你影院</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <header>
+        <div class="header-left">
+            <h1 onclick="window.location.href='index.html'" style="cursor: pointer;">🎬 MiniCinema</h1>
+        </div>
+        <nav class="header-nav">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="movies.html" class="nav-btn">电影</a>
+            <a href="cart.html" class="nav-btn active">购物车</a>
+            <a href="tickets.html" class="nav-btn">我的票夹</a>
+        </nav>
+        <div class="header-right">
+            <span id="welcomeText">欢迎访客</span>
+            <a href="user-center.html">个人中心</a>
+            <a href="#" onclick="logout(event)">退出登录</a>
+        </div>
+    </header>
+
+    <!-- 购物车内容 -->
+    <div class="container cart-container">
+        <div class="cart-header-section">
+            <h1 class="cart-page-title">🛒 购物车</h1>
+            <p class="cart-subtitle">检查您的订单并继续结账</p>
+        </div>
+
+        <div class="cart-main">
+            <!-- 购物车列表 -->
+            <div class="cart-list-section">
+                <div class="cart-list-header">
+                    <label class="cart-checkbox-all">
+                        <input type="checkbox" id="selectAll">
+                        <span class="checkbox-custom"></span>
+                        <span>全选</span>
+                    </label>
+                    <div class="cart-list-columns">
+                        <span class="col-movie">电影信息</span>
+                        <span class="col-screening">场次信息</span>
+                        <span class="col-seat">座位</span>
+                        <span class="col-price">单价</span>
+                        <span class="col-action">操作</span>
+                    </div>
+                </div>
+
+                <div id="cartItems" class="cart-list-body">
+                    <!-- 购物车项目动态加载 -->
+                </div>
+
+                <div class="cart-empty-state" id="emptyCart" style="display: none;">
+                    <div class="empty-content">
+                        <div class="empty-icon">🎬</div>
+                        <p class="empty-title">购物车是空的</p>
+                        <p class="empty-desc">还没有添加任何电影票</p>
+                        <a href="movies.html" class="btn btn-primary">去选电影</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 购物车摘要 -->
+            <div class="cart-summary-section">
+                <div class="summary-box">
+                    <h3 class="summary-title">订单摘要</h3>
+
+                    <div class="summary-item">
+                        <span class="summary-label">商品数量</span>
+                        <span class="summary-value" id="itemsCount">0</span>
+                    </div>
+
+                    <div class="summary-item">
+                        <span class="summary-label">已选商品</span>
+                        <span class="summary-value" id="selectedCount">0</span>
+                    </div>
+
+                    <div class="summary-item">
+                        <span class="summary-label">小计</span>
+                        <span class="summary-value">¥<span id="subtotal">0.00</span></span>
+                    </div>
+
+                    <div class="summary-divider"></div>
+
+                    <div class="summary-total">
+                        <span class="total-label">应付总额</span>
+                        <span class="total-amount">¥<span id="totalPrice">0.00</span></span>
+                    </div>
+
+                    <button id="checkoutBtn" class="btn btn-primary btn-checkout" disabled>
+                        去结算
+                    </button>
+
+                </div>
+
+                <!-- 优惠提示 -->
+                <div class="tips-box">
+                    <div class="tip-item">
+                        <span class="tip-icon">ℹ️</span>
+                        <span class="tip-text">选中商品后即可结算</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">🎟️</span>
+                        <span class="tip-text">完成支付后自动生成电子票</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/pages/cart.js"></script>
+</body>
+
+</html>

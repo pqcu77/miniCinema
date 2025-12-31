@@ -61,7 +61,7 @@ mybatis:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   # Mapper XMLs are placed under the Java package path com/cinema/minicinema/Mapper
   # Include both generic mapper folder and package path so mappers are discovered
-  mapper-locations: classpath*:/mapper/**/*.xml, classpath*:/com/cinema/minicinema/Mapper/**/*.xml
+  mapper-locations: classpath*:/mapper/**/*.xml #, classpath*:/com/cinema/minicinema/Mapper/**/*.xml
 
 logging:
   level:

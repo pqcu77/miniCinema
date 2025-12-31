@@ -13,10 +13,17 @@ public class Cart {
     private Integer quantity;      // 票数
     private BigDecimal price;      // 单价
     private BigDecimal totalPrice; // 总价
+
+    // ✅ 新增字段 - 冗余存储，避免每次查询关联表
+    private String movieName;      // 电影名称
+    private String moviePoster;    // 电影海报
+    private String cinemaName;     // 影院名称
+    private String hallName;       // 影厅名称
+    private LocalDateTime showTime; // 放映时间
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // getter/setter
+/*     // getter/setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -42,5 +49,5 @@ public class Cart {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; } */
 }
