@@ -198,9 +198,35 @@ window.addEventListener('load', () => {
   bootstrapAuth();
 });
 
-// 导出工具函数，以便在模块中使用
-export { storage, auth, showMessage, updateHeader, handleLogout };
+// ✅ 添加 formatDateTime 函数
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-';
+  
+  try {
+    const date = new Date(dateTime);
+    
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      return '-';
+    }
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch (e) {
+    console.error('格式化日期失败:', e);
+    return '-';
+  }
+};
 
-// 将关键函数挂载到全局 window 对象，以便在 HTML 的 onclick 中使用
+// ✅ 导出工具函数
+export { storage, auth, showMessage, updateHeader, handleLogout, formatDateTime };
+
+// 将关键函数挂载到全局 window 对象
 window.handleLogout = handleLogout;
 window.showMessage = showMessage;
+window.formatDateTime = formatDateTime;  // ✅ 也挂载到全局

@@ -1,4 +1,4 @@
-package com.cinema.minicinema.Mapper;
+/* package com.cinema.minicinema.Mapper;
 
 import com.cinema.minicinema.entity.Ticket;
 import org.apache.ibatis.annotations.*;
@@ -51,4 +51,53 @@ public interface TicketMapper {
         WHERE s.screening_id = #{screeningId}
     """)
     Map<String, String> getScreeningInfo(Integer screeningId);
+} */
+
+package com.cinema.minicinema.Mapper;
+
+import com.cinema.minicinema.dto.TicketDTO;
+import com.cinema.minicinema.entity.Ticket;
+import org.apache.ibatis.annotations.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Mapper
+public interface TicketMapper {
+    
+    @Insert("""
+        INSERT INTO ticket (order_id, screening_id, seat_number, ticket_code, 
+                           movie_name, cinema_name, hall_name, show_time, status, created_at)
+        VALUES (#{orderId}, #{screeningId}, #{seatNumber}, #{ticketCode},
+                #{movieName}, #{cinemaName}, #{hallName}, #{showTime}, #{status}, #{createdAt})
+    """)
+    @Options(useGeneratedKeys = true, keyProperty = "ticketId")
+    int insert(Ticket ticket);
+    
+    @Select("""
+        SELECT t.ticket_id as ticketId, t.order_id as orderId, t.screening_id as screeningId,
+               t.seat_number as seatNumber, t.ticket_code as ticketCode,
+               t.movie_name as movieName, t.cinema_name as cinemaName, t.hall_name as hallName,
+               t.show_time as showTime, t.status, t.created_at as createdAt, t.verified_at as verifiedAt
+        FROM ticket t
+        INNER JOIN orders o ON t.order_id = o.order_id
+        WHERE o.user_id = #{userId}
+        ORDER BY t.created_at DESC
+    """)
+    List<TicketDTO> selectByUserId(Long userId);
+    
+    @Select("""
+        SELECT ticket_id as ticketId, order_id as orderId, screening_id as screeningId,
+               seat_number as seatNumber, ticket_code as ticketCode,
+               movie_name as movieName, cinema_name as cinemaName, hall_name as hallName,
+               show_time as showTime, status, created_at as createdAt, verified_at as verifiedAt
+        FROM ticket WHERE ticket_code = #{ticketCode}
+    """)
+    TicketDTO selectByTicketCode(String ticketCode);
+    
+    @Select("SELECT * FROM ticket WHERE ticket_code = #{ticketCode}")
+    Ticket selectEntityByTicketCode(String ticketCode);
+    
+    @Update("UPDATE ticket SET status = #{status}, verified_at = #{verifiedAt} WHERE ticket_id = #{ticketId}")
+    int updateStatus(@Param("ticketId") Long ticketId, @Param("status") Integer status, @Param("verifiedAt") LocalDateTime verifiedAt);
 }

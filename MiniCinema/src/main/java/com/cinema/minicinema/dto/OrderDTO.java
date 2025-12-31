@@ -9,6 +9,9 @@ public class OrderDTO {
     private Long orderId;
     private Long userId;
     private String status;           // 订单状态: 0-待支付 1-已支付 2-已取消
+    private Long screeningId;        // ✅ 添加
+    private String seatInfo;         // ✅ 添加
+    private Integer seatCount;       // ✅ 添加
     private BigDecimal totalAmount;
     private String orderNumber;
     private LocalDateTime createTime;

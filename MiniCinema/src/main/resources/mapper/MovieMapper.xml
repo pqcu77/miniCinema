@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cinema.minicinema.Mapper.MovieMapper">
+
+    <!-- 定义结果映射 -->
+    <resultMap id="MovieResultMap" type="com.cinema.minicinema.entity.Movie">
+        <id property="movieId" column="movie_id" />
+        <result property="title" column="title" />
+        <result property="director" column="director" />
+        <result property="actors" column="actors" />
+        <result property="genre" column="genre" />
+        <result property="duration" column="duration" />
+        <result property="releaseDate" column="release_date" />
+        <result property="country" column="country" />
+        <result property="language" column="language" />
+        <result property="rating" column="rating" />
+        <result property="description" column="description" />
+        <result property="posterUrl" column="poster_url" />
+        <result property="trailerUrl" column="trailer_url" />
+        <result property="boxOffice" column="box_office" />
+        <result property="status" column="status" />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <!-- 1. 根据ID查询电影 -->
+    <select id="selectById" resultMap="MovieResultMap" parameterType="java.lang.Integer">
+        SELECT * FROM movies WHERE movie_id = #{movieId}
+    </select>
+
+    <!-- 2. 搜索电影 -->
+    <select id="searchMovies" resultMap="MovieResultMap" parameterType="com.cinema.minicinema.dto.MovieSearchDTO">
+        SELECT DISTINCT m.* FROM movies m
+        <if test="keyword != null and keyword != ''">
+            LEFT JOIN movie_tags t ON m.movie_id = t.movie_id
+        </if>
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                m.title ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.director ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.actors ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.genre ILIKE CONCAT('%', #{keyword}, '%')
+                <if test="keyword.length &gt; 2">
+                    OR m.search_text ILIKE CONCAT('%', #{keyword}, '%')
+                    OR EXISTS (
+                    SELECT 1 FROM movie_tags t
+                    WHERE t.movie_id = m.movie_id
+                    AND t.tag ILIKE CONCAT('%', #{keyword}, '%')
+                    )
+                </if>
+                )
+            </if>
+            <if test="genre != null and genre != ''">
+                AND m.genre LIKE CONCAT('%', #{genre}, '%')
+            </if>
+            <if test="region != null and region != ''">
+                AND m.region = #{region}
+            </if>
+            <if test="year != null">
+                AND EXTRACT(YEAR FROM m.release_date) = #{year}
+            </if>
+            <if test="minRating != null">
+                AND m.rating &gt;= #{minRating}
+            </if>
+            <if test="maxRating != null">
+                AND m.rating &lt;= #{maxRating}
+            </if>
+        </where>
+        <choose>
+            <when test="sortBy == 'rating'">
+                ORDER BY m.rating
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                NULLS LAST
+            </when>
+            <when test="sortBy == 'release_date'">
+                ORDER BY m.release_date
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                NULLS LAST
+            </when>
+            <when test="sortBy == 'box_office'">
+                ORDER BY m.box_office
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                NULLS LAST
+            </when>
+            <otherwise>
+                ORDER BY m.movie_id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 3. 计算搜索结果总数 -->
+    <select id="countSearchMovies" resultType="java.lang.Long" parameterType="com.cinema.minicinema.dto.MovieSearchDTO">
+        SELECT COUNT(DISTINCT m.movie_id) FROM movies m
+        <if test="keyword != null and keyword != ''">
+            LEFT JOIN movie_tags t ON m.movie_id = t.movie_id
+        </if>
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                m.title ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.director ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.actors ILIKE CONCAT('%', #{keyword}, '%')
+                OR m.genre ILIKE CONCAT('%', #{keyword}, '%')
+                <if test="keyword.length &gt; 2">
+                    OR m.search_text ILIKE CONCAT('%', #{keyword}, '%')
+                    OR EXISTS (
+                    SELECT 1 FROM movie_tags t
+                    WHERE t.movie_id = m.movie_id
+                    AND t.tag ILIKE CONCAT('%', #{keyword}, '%')
+                    )
+                </if>
+                )
+            </if>
+            <if test="genre != null and genre != ''">
+                AND m.genre LIKE CONCAT('%', #{genre}, '%')
+            </if>
+            <if test="region != null and region != ''">
+                AND m.region = #{region}
+            </if>
+            <if test="year != null">
+                AND EXTRACT(YEAR FROM m.release_date) = #{year}
+            </if>
+            <if test="minRating != null">
+                AND m.rating &gt;= #{minRating}
+            </if>
+            <if test="maxRating != null">
+                AND m.rating &lt;= #{maxRating}
+            </if>
+        </where>
+    </select>
+
+    <!-- 4. 获取热门电影 -->
+    <select id="getHotMovies" resultMap="MovieResultMap" parameterType="java.lang.Integer">
+        SELECT * FROM movies
+        WHERE status = 'SHOWING'
+        ORDER BY rating DESC, box_office DESC, release_date DESC
+        LIMIT #{count}
+    </select>
+
+    <!-- 5. 获取新片 -->
+    <select id="getNewMovies" resultMap="MovieResultMap" parameterType="java.lang.Integer">
+        SELECT * FROM movies
+        WHERE status = 'UPCOMING'
+        ORDER BY release_date DESC
+        LIMIT #{count}
+    </select>
+
+    <!-- 6. 获取相似电影 -->
+    <select id="getSimilarMovies" resultMap="MovieResultMap">
+        SELECT DISTINCT m.* FROM movies m
+        WHERE m.genre LIKE CONCAT('%', #{genre}, '%')
+          AND m.movie_id != #{movieId}
+        ORDER BY m.rating DESC
+        LIMIT #{count}
+    </select>
+
+    <!-- 7. 根据ID列表查询电影 -->
+    <select id="getMoviesByIds" resultMap="MovieResultMap" parameterType="java.util.List">
+        SELECT * FROM movies
+        WHERE movie_id IN
+        <foreach collection="movieIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- 8. 获取电影标签 -->
+    <select id="getTagsByMovieId" resultType="java.lang.String" parameterType="java.lang.Integer">
+        SELECT tag FROM movie_tags WHERE movie_id = #{movieId}
+    </select>
+
+    <!-- 9. 获取搜索建议 -->
+    <select id="getSearchSuggestions" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT DISTINCT title FROM movies
+        WHERE title ILIKE CONCAT(#{keyword}, '%')
+        LIMIT 10
+    </select>
+
+    <!-- 10. 插入电影 -->
+    <insert id="insert" parameterType="com.cinema.minicinema.entity.Movie" useGeneratedKeys="true" keyProperty="movieId">
+        INSERT INTO movies (
+            title, director, actors, genre, duration, release_date,
+            country, language, rating, description, poster_url, trailer_url,
+            box_office, status, create_time
+        ) VALUES (
+                     #{title}, #{director}, #{actors}, #{genre}, #{duration}, #{releaseDate},
+                     #{country}, #{language}, #{rating}, #{description}, #{posterUrl}, #{trailerUrl},
+                     #{boxOffice}, #{status}, #{createTime}
+                 )
+    </insert>
+
+    <!-- 11. 更新电影 -->
+    <update id="update" parameterType="com.cinema.minicinema.entity.Movie">
+        UPDATE movies SET
+                          title = #{title},
+                          director = #{director},
+                          actors = #{actors},
+                          genre = #{genre},
+                          duration = #{duration},
+                          release_date = #{releaseDate},
+                          country = #{country},
+                          language = #{language},
+                          rating = #{rating},
+                          description = #{description},
+                          poster_url = #{posterUrl},
+                          trailer_url = #{trailerUrl},
+                          box_office = #{boxOffice},
+                          status = #{status}
+        WHERE movie_id = #{movieId}
+    </update>
+
+    <!-- 12. 根据类型获取电影 -->
+    <select id="getMoviesByGenre" resultMap="MovieResultMap">
+        SELECT * FROM movies
+        WHERE genre LIKE CONCAT('%', #{genre}, '%')
+        ORDER BY rating DESC
+        LIMIT #{count}
+    </select>
+</mapper>

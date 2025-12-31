@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选座购票 - 迷你影院</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <header>
+        <div class="header-left">
+            <h1 onclick="window.location.href='index.html'" style="cursor: pointer;">🎬 MiniCinema</h1>
+        </div>
+        <nav class="header-nav">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="movies.html" class="nav-btn">电影</a>
+            <a href="cart.html" class="nav-btn">购物车</a>
+            <a href="tickets.html" class="nav-btn">我的票夹</a>
+        </nav>
+        <div class="header-right">
+            <span id="welcomeText">欢迎访客</span>
+            <a href="user-center.html">个人中心</a>
+            <a href="#" onclick="logout(event)">退出登录</a>
+        </div>
+    </header>
+
+    <div class="container seat-container">
+        <!-- 返回按钮 -->
+        <button onclick="history.back()" class="btn-back">
+            ← 返回
+        </button>
+
+        <!-- 页面标题 -->
+        <div class="seat-header-section">
+            <h1 class="seat-page-title">🎫 选座购票</h1>
+            <p class="seat-subtitle">选择您喜欢的座位</p>
+        </div>
+
+        <!-- 选座主区域 -->
+        <div class="seat-main">
+            <!-- 左侧：座位区域 -->
+            <div class="seat-left-section">
+                <!-- 放映厅信息 -->
+                <div class="hall-info-box">
+                    <h3 id="hallName" class="hall-name">未知影厅</h3>
+                    <p id="hallCapacity" class="hall-capacity">总座位: 0</p>
+                </div>
+
+                <!-- 屏幕 -->
+                <div class="screen-area">
+                    <div class="screen">🎬 屏幕</div>
+                </div>
+
+                <!-- 座位区域 -->
+                <div class="seats-area">
+                    <div id="seatsGrid" class="seats-grid">
+                        <!-- 座位动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 图例说明 -->
+                <div class="seats-legend">
+                    <div class="legend-item">
+                        <span class="seat-legend available"></span>
+                        <span>可选</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="seat-legend selected"></span>
+                        <span>已选</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="seat-legend occupied"></span>
+                        <span>已售</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="seat-legend locked"></span>
+                        <span>锁定</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：订单信息 -->
+            <div class="seat-right-section">
+                <!-- 放映场次信息 -->
+                <div class="screening-info-box">
+                    <h3 class="box-title">🎬 场次信息</h3>
+
+                    <div class="screening-detail">
+                        <div class="detail-row">
+                            <span class="detail-label">电影：</span>
+                            <span class="detail-value" id="movieTitle">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">影院：</span>
+                            <span class="detail-value" id="cinemaName">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">日期：</span>
+                            <span class="detail-value" id="screeningDate">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">时间：</span>
+                            <span class="detail-value" id="screeningTime">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">影厅：</span>
+                            <span class="detail-value" id="detailHallName">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">票价：</span>
+                            <span class="detail-value price">¥<span id="ticketPrice">0.00</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已选座位 -->
+                <div class="selected-seats-box">
+                    <h3 class="box-title">🎫 已选座位</h3>
+
+                    <div id="selectedSeats" class="selected-seats-display">
+                        <p class="no-selected">还未选择座位</p>
+                    </div>
+
+                    <div class="seats-count">
+                        <span class="count-label">已选座位数：</span>
+                        <span class="count-value" id="selectedCount">0</span>
+                    </div>
+                </div>
+
+                <!-- 价格统计 -->
+                <div class="price-summary-box">
+                    <div class="summary-row">
+                        <span class="summary-label">单价</span>
+                        <span class="summary-value">¥<span id="unitPrice">0.00</span></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">座位数</span>
+                        <span class="summary-value"><span id="seatCount">0</span>个</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row total">
+                        <span class="total-label">应付金额</span>
+                        <span class="total-amount">¥<span id="totalPrice">0.00</span></span>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                    <button id="confirmBtn" class="btn btn-primary btn-confirm" disabled>
+                        确认购票
+                    </button>
+                </div>
+
+                <!-- 提示信息 -->
+                <div class="tips-box">
+                    <p class="tip">💡 选择座位后点击"确认购票"添加到购物车</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/pages/seat-selection.js"></script>
+</body>
+
+</html>

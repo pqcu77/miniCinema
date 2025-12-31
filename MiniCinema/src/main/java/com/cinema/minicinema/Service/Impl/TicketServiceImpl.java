@@ -1,4 +1,4 @@
-package com.cinema.minicinema.Service.Impl;
+/* package com.cinema.minicinema.Service.Impl;
 
 import com.cinema.minicinema.Mapper.OrderMapper;
 import com.cinema.minicinema.Mapper.TicketMapper;
@@ -116,5 +116,131 @@ public class TicketServiceImpl implements TicketService {
         dto.setStatusText(ticket.getStatus() == 0 ? "已出票" : "已核销");
         dto.setCreatedAt(ticket.getCreatedAt());
         return dto;
+    }
+} */
+
+package com.cinema.minicinema.Service.Impl;
+
+import com.cinema.minicinema.Mapper.OrderMapper;
+import com.cinema.minicinema.Mapper.ScreeningMapper;
+import com.cinema.minicinema.Mapper.TicketMapper;
+import com.cinema.minicinema.Service.TicketService;
+import com.cinema.minicinema.dto.ScreeningDetailDTO;
+import com.cinema.minicinema.dto.TicketDTO;
+import com.cinema.minicinema.entity.Order;
+import com.cinema.minicinema.entity.Ticket;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Service
+public class TicketServiceImpl implements TicketService {
+    
+    @Autowired
+    private TicketMapper ticketMapper;
+    
+    @Autowired
+    private OrderMapper orderMapper;
+    
+    @Autowired
+    private ScreeningMapper screeningMapper;
+    
+    @Override
+    public List<TicketDTO> getUserTickets(Long userId) {
+        log.info("🎫 获取用户票据: userId={}", userId);
+        List<TicketDTO> tickets = ticketMapper.selectByUserId(userId);
+        log.info("✅ 找到 {} 张票", tickets != null ? tickets.size() : 0);
+        return tickets != null ? tickets : new ArrayList<>();
+    }
+    
+    @Override
+    @Transactional
+    public void generateTickets(Long orderId) {
+        log.info("🎫 生成电子票: orderId={}", orderId);
+        
+        // 1. 获取订单信息
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            log.error("❌ 订单不存在: orderId={}", orderId);
+            throw new RuntimeException("订单不存在");
+        }
+        
+        log.info("📋 订单信息: screeningId={}, seatInfo={}", 
+            order.getScreeningId(), order.getSeatInfo());
+        
+        // 2. 获取场次详情
+        ScreeningDetailDTO screening = screeningMapper.selectDetailById(order.getScreeningId().intValue());
+        if (screening == null) {
+            log.error("❌ 场次不存在: screeningId={}", order.getScreeningId());
+            throw new RuntimeException("场次不存在");
+        }
+        
+        log.info("🎬 场次信息: movie={}, cinema={}, hall={}", 
+            screening.getMovieTitle(), 
+            screening.getCinemaName(), 
+            screening.getHallName());
+        
+        // 3. 解析座位（如 "A1,A2,A3"）
+        String[] seats = order.getSeatInfo().split(",");
+        
+        for (String seat : seats) {
+            seat = seat.trim();
+            if (seat.isEmpty()) continue;
+            
+            // 创建电子票
+            Ticket ticket = new Ticket();
+            ticket.setOrderId(orderId);
+            ticket.setScreeningId(order.getScreeningId().intValue());
+            ticket.setSeatNumber(seat);
+            ticket.setTicketCode(generateTicketCode());
+            
+            // 设置电影、影院、影厅信息
+            ticket.setMovieName(screening.getMovieTitle());
+            ticket.setCinemaName(screening.getCinemaName());
+            ticket.setHallName(screening.getHallName());
+            ticket.setShowTime(screening.getScreenTime());
+            
+            ticket.setStatus(0);  // 0=未核销
+            ticket.setCreatedAt(LocalDateTime.now());
+            
+            ticketMapper.insert(ticket);
+            
+            log.info("✅ 电子票生成: ticketCode={}, seat={}", ticket.getTicketCode(), seat);
+        }
+        
+        log.info("🎉 所有电子票生成完成，共 {} 张", seats.length);
+    }
+    
+    @Override
+    public TicketDTO getTicketDetail(String ticketCode) {
+        return ticketMapper.selectByTicketCode(ticketCode);
+    }
+    
+    @Override
+    @Transactional
+    public void verifyTicket(String ticketCode) {
+        log.info("✅ 核销票据: ticketCode={}", ticketCode);
+        
+        Ticket ticket = ticketMapper.selectEntityByTicketCode(ticketCode);
+        if (ticket == null) {
+            throw new RuntimeException("票据不存在");
+        }
+        
+        if (ticket.getStatus() == 1) {
+            throw new RuntimeException("票据已核销");
+        }
+        
+        ticketMapper.updateStatus(ticket.getTicketId(), 1, LocalDateTime.now());
+    }
+    
+    private String generateTicketCode() {
+        return "TKT" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
 }
