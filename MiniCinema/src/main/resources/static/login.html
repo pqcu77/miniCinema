@@ -1,1 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - MiniCinema</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .auth-layout {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-layout::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23f23030" stop-opacity="0.1"/><stop offset="100%" stop-color="%23f23030" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="200" fill="url(%23a)"/><circle cx="800" cy="600" r="300" fill="url(%23a)"/><circle cx="400" cy="800" r="250" fill="url(%23a)"/></svg>') center/cover;
+      z-index: -1;
+    }
+
+    .auth-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 3rem;
+      position: relative;
+    }
+
+    .auth-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 3rem;
+    }
+
+    .welcome-content {
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .welcome-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+      background: linear-gradient(45deg, #f23030, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+
+    .welcome-subtitle {
+      font-size: 1.3rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 3rem;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      list-style: none;
+      text-align: left;
+      margin-top: 2rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      color: #f23030;
+      font-weight: bold;
+      margin-right: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .auth-form-container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      padding: 3rem;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-form-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #f23030, #ff6b6b, #f23030);
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    .form-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .form-icon {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-icon svg {
+      width: 64px;
+      height: 64px;
+      fill: #f23030;
+      filter: drop-shadow(0 4px 8px rgba(242, 48, 48, 0.3));
+    }
+
+    .form-title {
+      color: #fff;
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(45deg, #fff, #f0f0f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1rem;
+    }
+
+    .auth-form-group {
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .auth-form-group:last-of-type {
+      margin-bottom: 2.5rem;
+    }
+
+    .auth-form-group label {
+      display: block;
+      margin-bottom: 0.8rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+    }
+
+    .auth-input-wrapper {
+      position: relative;
+    }
+
+    .auth-input-icon {
+      position: absolute;
+      left: 1.2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 1.2rem;
+      z-index: 1;
+      transition: color 0.3s ease;
+    }
+
+    .auth-form-group input {
+      width: 100%;
+      padding: 1.2rem 1.5rem 1.2rem 3.5rem;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .auth-form-group input:focus + .auth-input-icon {
+      color: #f23030;
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 1.3rem;
+      background: linear-gradient(45deg, #f23030, #ff6b6b);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-text-center {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1rem;
+    }
+
+    .auth-text-center a {
+      color: #f23030;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border-bottom: 1px solid transparent;
+    }
+
+    .auth-text-center a:hover {
+      color: #ff6b6b;
+      border-bottom-color: #ff6b6b;
+    }
+
+    /* Header adjustments for auth pages */
+    .auth-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(26, 26, 46, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      border-bottom: 1px solid rgba(242, 48, 48, 0.2);
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 968px) {
+      .auth-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-left {
+        padding: 2rem;
+        min-height: 40vh;
+      }
+
+      .auth-right {
+        padding: 2rem;
+      }
+
+      .welcome-title {
+        font-size: 2.5rem;
+      }
+
+      .auth-form-container {
+        padding: 2rem;
+        max-width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .auth-left {
+        padding: 1.5rem;
+        min-height: 30vh;
+      }
+
+      .auth-right {
+        padding: 1.5rem;
+      }
+
+      .welcome-title {
+        font-size: 2rem;
+      }
+
+      .auth-form-container {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="auth-header">
+    <div class="header-left">
+      <h1 onclick="window.location.href='index.html'">🎬 MiniCinema</h1>
+    </div>
+    <div class="header-right">
+      <a href="register.html">注册账号</a>
+    </div>
+  </header>
+
+  <div class="auth-layout">
+    <div class="auth-left">
+      <div class="welcome-content">
+        <h1 class="welcome-title">欢迎回来</h1>
+        <p class="welcome-subtitle">登录您的账户，继续精彩的观影体验</p>
+
+        <ul class="feature-list">
+          <li>查看个人观影记录</li>
+          <li>管理电影收藏列表</li>
+          <li>享受个性化推荐</li>
+          <li>快速便捷购票体验</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="auth-form-container">
+        <div class="form-header">
+          <div class="form-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1V3H9V1L3 7V9H21ZM12 8.5C13.38 8.5 14.5 9.62 14.5 11V12.5H22V20C22 21.11 21.11 22 20 22H4C2.9 22 2 21.11 2 20V12.5H9.5V11C9.5 9.62 10.62 8.5 12 8.5Z"/>
+            </svg>
+          </div>
+          <h2 class="form-title">账户登录</h2>
+          <p class="form-subtitle">请输入您的登录信息</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="auth-form-group">
+            <label for="username">用户名</label>
+            <div class="auth-input-wrapper">
+              <input type="text" id="username" name="username" placeholder="请输入您的用户名" required autocomplete="username">
+              <span class="auth-input-icon">👤</span>
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label for="password">密码</label>
+            <div class="auth-input-wrapper">
+              <input type="password" id="password" name="password" placeholder="请输入您的密码" required autocomplete="current-password">
+              <span class="auth-input-icon">🔒</span>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-btn">立即登录</button>
+        </form>
+
+        <div class="auth-text-center">
+          还没有账号？<a href="register.html">立即注册</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/utils.js"></script>
+  <script type="module" src="js/pages/login.js"></script>
+</body>
+</html>
 

@@ -21,15 +21,20 @@ const switchTab = async (tab, evt) => {
   else if (tab === 'password') loadPasswordForm();
   else if (tab === 'favorites') loadFavorites();
   else if (tab === 'history') loadHistory();
-  else if (tab === 'orders') loadOrders();
 };
 
 // expose switchTab for inline handlers
 window.switchTab = switchTab;
 
 const loadUserInfo = async () => {
-  const user = storage.getUser();
+  const user = storage.getUser() || {};
   const token = storage.getToken();
+
+  // If not logged in, redirect (extra guard)
+  if (!token || !user.username) {
+    auth.logout();
+    return;
+  }
 
   document.getElementById('info').innerHTML = `
     <h2>个人信息</h2>
@@ -54,16 +59,24 @@ const loadUserInfo = async () => {
         email: document.getElementById('email').value
       });
 
-      if (response.code === 200) {
-        storage.setUser(response.data);
+      // Accept backend success flags: code===1, code===200, or success===true
+      const ok = response && (response.code === 1 || response.code === 200 || response.success === true);
+      if (ok) {
+        // backend commonly returns updated user in response.data
+        const updated = response.data || response.user || null;
+        if (updated) storage.setUser(updated);
         showMessage('更新成功', 'success');
+      } else {
+        showMessage(response?.msg || response?.message || '更新失败', 'error');
       }
     } catch (error) {
+      console.error('Update user failed', error);
       showMessage('更新失败', 'error');
     }
   });
 };
 
+// Enhanced error handling for password change
 const loadPasswordForm = () => {
   const token = storage.getToken();
 
@@ -99,16 +112,26 @@ const loadPasswordForm = () => {
     }
 
     try {
-      const response = await api.changePassword(token, oldPassword, newPassword);
+      // resolve userId explicitly to ensure backend receives it
+      const storedUser = storage.getUser() || userState.getUser() || null;
+      const resolvedUserId = storedUser?.userId ?? null;
+      if (!resolvedUserId) {
+        showMessage('未检测到登录用户，请重新登录后重试', 'error');
+        return;
+      }
 
-      if (response.code === 200) {
+      const response = await api.changePassword(token, oldPassword, newPassword, confirmPassword, resolvedUserId);
+
+      const ok = response && (response.code === 1 || response.code === 200 || response.success === true);
+      if (ok) {
         showMessage('密码修改成功', 'success', 2000);
         setTimeout(() => auth.logout(), 2000);
       } else {
-        showMessage(response.message || '修改失败', 'error');
+        showMessage(response?.msg || response?.message || '修改失败，请检查输入', 'error');
       }
     } catch (error) {
-      showMessage('修改失败', 'error');
+      console.error('Password change failed:', error);
+      showMessage('修改失败，请稍后再试', 'error');
     }
   });
 };
@@ -123,71 +146,73 @@ const loadFavorites = async () => {
     const response = await api.getFavorites(token);
     console.log('loadFavorites: raw response=', response);
 
-    // Normalize response into an array of favorite items
     let favorites = [];
     if (Array.isArray(response)) {
       favorites = response;
     } else if (response && typeof response === 'object') {
-      // common shapes: { code:1, data: { records: [...] } } or { data: [...] } or { records: [...] }
       if (Array.isArray(response.data)) favorites = response.data;
       else if (response.data && Array.isArray(response.data.records)) favorites = response.data.records;
       else if (Array.isArray(response.records)) favorites = response.records;
       else if (Array.isArray(response.data?.records)) favorites = response.data.records;
+      // Some backends return {code:1, data: [...]}
+      else if (Array.isArray(response.data?.favorites)) favorites = response.data.favorites;
     }
 
-    // Ensure favorites is an array
     if (!Array.isArray(favorites)) favorites = [];
     console.log('loadFavorites: resolved favorites count=', favorites.length);
 
     if (favorites.length === 0) {
-      container.innerHTML = '<p>还没有收藏电影</p>';
+      container.innerHTML = '<p>还没有收藏电影或推荐失败</p>';
       return;
     }
 
-    // Build html with safe normalization of each favorite item so we can handle different key styles
-    const cards = [];
-    for (const raw of favorites) {
-      try {
-        // If api.getFavorites already returned normalized object (movieId, posterUrl, title), use it directly
-        const source = (raw && raw.movieId && (raw.posterUrl || raw.poster_url || raw.poster)) ? raw : raw.raw ?? raw;
+    const resolved = await Promise.all(favorites.map(async (raw) => {
+      const movieId = raw.movieId ?? raw.movie_id ?? raw.movie?.movieId ?? raw.movie?.id ?? raw.id ?? null;
+      const posterUrlCandidate = raw.posterUrl ?? raw.poster_url ?? raw.poster ?? raw.movie?.posterUrl ?? raw.movie?.poster_url ?? raw.movie?.poster ?? raw.movie?.poster_path ?? null;
+      const titleCandidate = raw.title ?? raw.name ?? raw.movie?.title ?? raw.movie?.name ?? '';
 
-        const fav = {
-          movieId: source.movieId ?? source.movie_id ?? source.movieid ?? source.movie?.movieId ?? source.movie?.movie_id ?? source.id ?? source.movie?.id,
-          posterUrl: source.posterUrl ?? source.poster_url ?? source.posterurl ?? source.poster ?? source.movie?.posterUrl ?? source.movie?.poster_url ?? source.movie?.poster ?? source.movie?.poster_path,
-          title: source.title ?? source.name ?? source.movie?.title ?? source.movie?.name ?? source.movie?.original_title ?? '',
-          rating: source.rating ?? source.score ?? source.movie?.rating ?? source.movie?.vote_average ?? ''
-        };
+      let posterUrl = posterUrlCandidate;
+      let title = titleCandidate;
+      let rating = raw.rating ?? raw.score ?? raw.movie?.rating ?? '';
 
-        // ensure we have an id
-        const idVal = fav.movieId ?? source.movieId ?? source.movie_id ?? source.id ?? (source.movie && (source.movie.movieId || source.movie.id));
-        if (!idVal) {
-          console.warn('loadFavorites: skipping item without movie id', raw);
-          continue;
+      if ((!posterUrl || posterUrl === '') || (!title || title === '')) {
+        try {
+          const detailResp = await api.getMovieDetail(movieId);
+          if (detailResp && (detailResp.code === 1 || detailResp.code === 200) && detailResp.data) {
+            posterUrl = posterUrl || detailResp.data.posterUrl || detailResp.data.poster_url || null;
+            title = title || detailResp.data.title || detailResp.data.name || '';
+            rating = rating || detailResp.data.rating || null;
+          }
+        } catch (e) {
+          console.debug('loadFavorites: failed to fetch movie detail for fallback', movieId, e);
         }
-
-        const idForLink = encodeURIComponent(idVal);
-        const poster = fav.posterUrl || 'https://via.placeholder.com/200x280';
-        const title = fav.title || '';
-        const rating = fav.rating || 'N/A';
-
-        console.debug('loadFavorites: card ->', { id: idVal, poster, title, rating });
-
-        cards.push(`
-          <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${idForLink}'">
-            <div class="movie-poster">
-              <img src="${poster}" alt="${title}" onerror="this.src='https://via.placeholder.com/200x280'">
-            </div>
-            <div class="movie-info">
-              <div class="movie-title">${title}</div>
-              <div class="movie-rating">⭐ ${rating}</div>
-            </div>
-          </div>
-        `);
-      } catch (itemErr) {
-        console.error('loadFavorites: failed to process favorite item', itemErr, raw);
-        continue;
       }
-    }
+
+      return {
+        movieId: String(movieId),
+        posterUrl: posterUrl || 'https://via.placeholder.com/200x280',
+        title: title || '',
+        rating: rating || 'N/A'
+      };
+    }));
+
+    const cards = resolved.map(item => {
+      const idForLink = encodeURIComponent(item.movieId);
+      const poster = item.posterUrl;
+      const title = item.title || '';
+      const rating = item.rating || 'N/A';
+      return `
+        <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${idForLink}'">
+          <div class="movie-poster">
+            <img src="${poster}" alt="${title}" onerror="this.src='https://via.placeholder.com/200x280'">
+          </div>
+          <div class="movie-info">
+            <div class="movie-title">${title}</div>
+            <div class="movie-rating">⭐ ${rating}</div>
+          </div>
+        </div>
+      `;
+    });
 
     if (cards.length === 0) {
       container.innerHTML = '<p>还没有收藏电影或数据格式不符</p>';
@@ -205,17 +230,16 @@ const loadFavorites = async () => {
 
   } catch (error) {
     console.error('加载收藏失败', error);
-    container.innerHTML = '<p>加载失败</p>';
+    container.innerHTML = '<p>加载失败，请稍后重试</p>';
   } finally {
-    // safety: if spinner still present and content not replaced, ensure we show a fallback quickly
+    // extend spinner timeout to 5s to avoid quick replacement
     if (container && container.querySelector('.spinner')) {
-      // Replace spinner after short timeout to avoid stuck UI
       setTimeout(() => {
         if (container && container.querySelector('.spinner')) {
           console.warn('loadFavorites: spinner timeout, replacing with fallback');
           container.innerHTML = '<p>加载超时，请稍后重试</p>';
         }
-      }, 1000);
+      }, 5000);
     }
   }
 };
@@ -226,51 +250,62 @@ const loadHistory = async () => {
   const container = document.getElementById('history');
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
-  if (!user) {
-    container.innerHTML = '<p>请先登录以查看历史记录</p>';
-    return;
-  }
-
   try {
-    const response = await api.get(`/api/movies/history`, { userId: user.userId, limit: 50 });
-    // api.get returns either normalized array or { code:1, data: [...] }
-    let movies = [];
-    if (Array.isArray(response)) movies = response;
-    else if (response && response.code === 1) movies = response.data || [];
-    else if (response && Array.isArray(response.data)) movies = response.data;
+    console.log('loadHistory: calling api with userId=', user?.userId);
 
-    if (!Array.isArray(movies) || movies.length === 0) {
-      container.innerHTML = '<p>暂无历史记录</p>';
+    // Call GET /api/movies/history?userId=xxx
+    const response = await api.get(`/api/movies/history`, {
+      userId: user?.userId,
+      limit: 50
+    });
+
+    console.log('loadHistory: raw response=', response);
+
+    let historyMovies = [];
+    if (Array.isArray(response)) {
+      historyMovies = response;
+    } else if (response && typeof response === 'object') {
+      if (Array.isArray(response.data)) historyMovies = response.data;
+      else if (response.data && Array.isArray(response.data.records)) historyMovies = response.data.records;
+      else if (Array.isArray(response.records)) historyMovies = response.records;
+    }
+
+    if (!Array.isArray(historyMovies)) historyMovies = [];
+    console.log('loadHistory: resolved history count=', historyMovies.length);
+
+    if (historyMovies.length === 0) {
+      container.innerHTML = '<h2>历史记录</h2><p style="margin-top: 1.5rem;">暂无历史记录</p>';
       return;
     }
+
+    const cards = historyMovies.map(movie => {
+      const movieId = movie.movieId || movie.movie_id || movie.id;
+      const posterUrl = movie.posterUrl || movie.poster_url || movie.poster || 'https://via.placeholder.com/200x280';
+      const title = movie.title || movie.name || '未知电影';
+      const rating = movie.rating || movie.score || 'N/A';
+
+      return `
+        <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${encodeURIComponent(movieId)}'">
+          <img src="${posterUrl}" alt="${title}" onerror="this.src='https://via.placeholder.com/200x280?text=No+Image'">
+          <div class="movie-info">
+            <h3>${title}</h3>
+            <p>评分: ${rating}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
 
     container.innerHTML = `
       <h2>历史记录</h2>
       <div class="movies-grid" style="margin-top: 1.5rem;">
-        ${movies.map(m => `
-          <div class="movie-card" onclick="window.location.href='movie-detail.html?id=${m.movieId || m.movie_id || m.id}'">
-            <div class="movie-poster">
-              <img src="${m.posterUrl || m.poster_url || m.poster || (m.movie && (m.movie.posterUrl || m.movie.poster_url)) || 'https://via.placeholder.com/200x280'}" alt="${m.title || ''}" onerror="this.src='https://via.placeholder.com/200x280'">
-            </div>
-            <div class="movie-info">
-              <div class="movie-title">${m.title || (m.movie && m.movie.title) || ''}</div>
-              <div class="movie-rating">⭐ ${m.rating || (m.movie && m.movie.rating) || 'N/A'}</div>
-            </div>
-          </div>
-        `).join('')}
+        ${cards}
       </div>
     `;
-  } catch (error) {
-    console.error('加载历史失败', error);
-    container.innerHTML = '<p>加载失败</p>';
-  }
-};
 
-const loadOrders = () => {
-  document.getElementById('orders').innerHTML = `
-    <h2>订单记录</h2>
-    <p style="margin-top: 1.5rem;">订单功能开发中...</p>
-  `;
+  } catch (error) {
+    console.error('加载历史记录失败', error);
+    container.innerHTML = '<h2>历史记录</h2><p style="margin-top: 1.5rem;">加载失败，请稍后重试</p>';
+  }
 };
 
 loadUserInfo();

@@ -6,11 +6,12 @@ spring:
     username: developer
     password: cinema@123
 
-  # 添加 Redis 配置
+
+  # Redis 配置
   redis:
-    host: localhost # 或者 127.0.0.1
+    host: localhost
     port: 6379
-    password: # 默认没有密码，留空即可
+    password: "123456"
     database: 0
     timeout: 3000ms
     lettuce:
@@ -19,6 +20,7 @@ spring:
         max-wait: -1ms
         max-idle: 8
         min-idle: 0
+    client-type: lettuce
 
   jpa:
     hibernate:
@@ -33,20 +35,24 @@ spring:
           fetch_size: 50
         order_inserts: true
         order_updates: true
-        # Use custom pagination via native query
         use_sql_comments: false
+
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
     mode: HTML
     encoding: UTF-8
     cache: false
+
   mvc:
-    static-path-pattern: /static/**
+    static-path-pattern: /**
+
+  # Adjusting HTTP encoding configuration
   http:
     encoding:
-      charset: UTF-8
-      force: true
+      enabled: true
+      force-request: true
+      force-response: true
 
 server:
   port: 8080
@@ -59,9 +65,8 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  # Mapper XMLs are placed under the Java package path com/cinema/minicinema/Mapper
-  # Include both generic mapper folder and package path so mappers are discovered
-  mapper-locations: classpath*:/mapper/**/*.xml #, classpath*:/com/cinema/minicinema/Mapper/**/*.xml
+  # Mapper XMLs are placed in the standard resources/mapper folder
+  mapper-locations: classpath*:/mapper/**/*.xml
 
 logging:
   level:

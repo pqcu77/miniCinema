@@ -4,6 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>个人中心 - MiniCinema</title>
+  <!-- API URL 自动初始化 -->
+  <script>
+    (function() {
+      const protocol = window.location.protocol;
+      const hostname = window.location.hostname;
+      const port = window.location.port ? ':' + window.location.port : '';
+      const isNgrok = hostname.includes('ngrok') || hostname.includes('ngrok-free');
+
+      let apiUrl = isNgrok
+        ? `${protocol}//${hostname}${port}`
+        : 'http://localhost:8080';
+
+      localStorage.setItem('backendUrl', apiUrl);
+      window.API_BASE_URL = apiUrl;
+      console.log('✅ API URL 初始化:', apiUrl);
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -21,7 +38,7 @@
         <button class="menu-btn" onclick="switchTab('password', event)">修改密码</button>
         <button class="menu-btn" onclick="switchTab('favorites', event)">我的收藏</button>
         <button class="menu-btn" onclick="switchTab('history', event)">历史记录</button>
-        <button class="menu-btn" onclick="switchTab('orders', event)">订单记录</button>
+<!--        <button class="menu-btn" onclick="switchTab('orders', event)">订单记录</button>-->
       </div>
       <div class="user-content">
         <div id="info" class="content-tab active"></div>

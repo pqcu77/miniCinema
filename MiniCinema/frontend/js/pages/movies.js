@@ -168,10 +168,78 @@ async function loadRecommendedMovies() {
     emptyState.style.display = 'none';
 
     try {
+        console.log('请求推荐电影');
         const resp = await api.getRecommendedMovies(pageSize);
+        console.log('推荐接口返回：', resp);
         loadingDiv.style.display = 'none';
-        if (resp.code === 1 && resp.data && resp.data.length) {
-            resp.data.forEach(movie => {
+
+        // normalize response to an array of movie objects
+        let recList = [];
+
+        // Common shapes handled:
+        // 1) plain array -> [ {movie...}, ... ]
+        // 2) { code: 1, data: [ ... ] }
+        // 3) { code: 1, data: { records: [...] } }
+        // 4) { code: 1, data: { movies: [...] } }
+        // 5) { records: [...] } or { movies: [...] } or { list: [...] }
+        if (!resp) {
+            recList = [];
+        } else if (Array.isArray(resp)) {
+            recList = resp;
+        } else if (Array.isArray(resp.data)) {
+            recList = resp.data;
+        } else if (resp.data && Array.isArray(resp.data.records)) {
+            recList = resp.data.records;
+        } else if (resp.data && Array.isArray(resp.data.movies)) {
+            recList = resp.data.movies;
+        } else if (resp.data && Array.isArray(resp.data.list)) {
+            recList = resp.data.list;
+        } else if (Array.isArray(resp.records)) {
+            recList = resp.records;
+        } else if (Array.isArray(resp.movies)) {
+            recList = resp.movies;
+        } else if (Array.isArray(resp.list)) {
+            recList = resp.list;
+        } else if (resp.data && resp.data.recommendations && Array.isArray(resp.data.recommendations)) {
+            recList = resp.data.recommendations;
+        } else if (resp.code === 1 && resp.data && typeof resp.data === 'object') {
+            // single-object response containing movie fields? fallback: try to coerce
+            if (Array.isArray(resp.data.items)) recList = resp.data.items;
+            else if (Array.isArray(resp.data.results)) recList = resp.data.results;
+        }
+
+        // Helper: normalize a movie object so downstream code can rely on movie.movieId, movie.posterUrl, movie.title, movie.rating
+        function normalizeMovie(raw) {
+            if (!raw) return null;
+            const m = Object.assign({}, raw);
+            // id variants
+            if (!m.movieId) {
+                if (m.id) m.movieId = m.id;
+                else if (m.movie_id) m.movieId = m.movie_id;
+                else if (m.movieIdStr && !isNaN(Number(m.movieIdStr))) m.movieId = Number(m.movieIdStr);
+            }
+            // poster variants
+            if (!m.posterUrl) {
+                if (m.poster_url) m.posterUrl = m.poster_url;
+                else if (m.poster) m.posterUrl = m.poster;
+            }
+            // title variants
+            if (!m.title) {
+                if (m.name) m.title = m.name;
+            }
+            // rating variants
+            if (m.rating === undefined || m.rating === null) {
+                if (m.score !== undefined) m.rating = m.score;
+                else if (m.avgRating !== undefined) m.rating = m.avgRating;
+            }
+            return m;
+        }
+
+        // normalize whole list
+        recList = recList.map(normalizeMovie).filter(Boolean);
+
+        if (recList && recList.length) {
+            recList.forEach(movie => {
                 moviesGrid.appendChild(createMovieCard(movie));
             });
         } else {
@@ -246,4 +314,3 @@ window.loadRecommendedMovies = loadRecommendedMovies;
 window.goToDetail = goToDetail;
 window.bookTicket = bookTicket;
 window.logout = logout;
-

@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>电影列表 - MiniCinema</title>
+    <!-- API URL 自动初始化 -->
+    <script>
+      (function() {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const port = window.location.port ? ':' + window.location.port : '';
+        const isNgrok = hostname.includes('ngrok') || hostname.includes('ngrok-free');
+
+        let apiUrl = isNgrok
+          ? `${protocol}//${hostname}${port}`
+          : 'http://localhost:8080';
+
+        localStorage.setItem('backendUrl', apiUrl);
+        window.API_BASE_URL = apiUrl;
+        console.log('✅ API URL 初始化:', apiUrl);
+      })();
+    </script>
     <link rel="stylesheet" href="css/style.css">
     <style>
         .movies-container {

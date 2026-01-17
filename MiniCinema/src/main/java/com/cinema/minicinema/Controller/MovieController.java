@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
@@ -42,12 +43,28 @@ public class MovieController {
      * 记录用户观看电影的行为（REST: POST /api/movies/{movieId}/history）
      */
     @PostMapping("/{movieId}/history")
+    @Transactional
     public Map<String, Object> recordMovieHistory(
             @PathVariable Long movieId,
             @RequestParam(required = false) String userId,
-            @RequestParam(defaultValue = "0") Integer watchDuration) {
+            @RequestParam(defaultValue = "0") Integer watchDuration,
+            @RequestBody(required = false) Map<String, Object> body) {
 
         Long resolvedUserId = AuthUtil.resolveUserId(request, userId);
+
+        // If client sent JSON body with userId, prefer that when request param / auth absent
+        if (resolvedUserId == null && body != null && body.get("userId") != null) {
+            try {
+                resolvedUserId = Long.valueOf(body.get("userId").toString());
+            } catch (Exception ignored) {}
+        }
+
+        // If client sent watchDuration in body, use it
+        if (body != null && body.get("watchDuration") != null) {
+            try {
+                watchDuration = Integer.valueOf(body.get("watchDuration").toString());
+            } catch (Exception ignored) {}
+        }
 
         log.info("记录观看: userId={}, movieId={}, watchDuration={}", resolvedUserId, movieId, watchDuration);
 
@@ -59,7 +76,11 @@ public class MovieController {
                 return result;
             }
 
-            userHistoryMapper.recordUserHistory(resolvedUserId, movieId, LocalDateTime.now(), watchDuration);
+            // Use the NoDuration variant directly since the database doesn't have watch_duration column
+            int updated = userHistoryMapper.updateRecordUserHistoryNoDuration(resolvedUserId, movieId, LocalDateTime.now());
+            if (updated == 0) {
+                userHistoryMapper.insertRecordUserHistoryNoDuration(resolvedUserId, movieId, LocalDateTime.now());
+            }
 
             result.put("success", true);
             result.put("message", "观看记录已保存");

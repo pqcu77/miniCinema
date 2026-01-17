@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MiniCinema 诊断工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { color: #333; margin-bottom: 10px; }
+        .header p { color: #666; }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .url-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+        .test-btn:active {
+            transform: translateY(0);
+        }
+        .result {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+        }
+        #output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid #333;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+        .stat-label { font-size: 12px; color: #999; }
+        .stat-value { font-size: 16px; font-weight: bold; color: #333; }
+        .section { margin-bottom: 20px; }
+        .loading { color: #ffc107; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 49%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 MiniCinema 诊断工具 v2.0</h1>
+            <p>用于诊断前后端连接问题，支持 localhost 和 ngrok 模式</p>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ 后端 URL 配置</h2>
+            <div class="url-input-group">
+                <input type="text" id="backendUrl" placeholder="输入后端 URL">
+                <button class="test-btn" onclick="saveBackendUrl()">💾 保存 URL</button>
+                <button class="test-btn" onclick="useLocalhost()">🏠 本地 localhost</button>
+                <button class="test-btn" onclick="useNgrok()">🌐 ngrok 代理</button>
+            </div>
+            <div id="urlResult"></div>
+            <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="card">
+            <h2>🔍 API 连接测试</h2>
+            <div class="button-group">
+                <button class="test-btn" onclick="testBackendConnection()">测试后端连接</button>
+                <button class="test-btn" onclick="testLogin()">测试登录</button>
+                <button class="test-btn" onclick="testMovieList()">测试电影列表</button>
+                <button class="test-btn" onclick="testAllApis()">批量测试所有 API</button>
+            </div>
+            <div id="apiResult"></div>
+        </div>
+
+        <div class="card">
+            <h2>💾 本地存储检查</h2>
+            <button class="test-btn" onclick="checkLocalStorage()">检查 localStorage</button>
+            <div id="storageResult"></div>
+        </div>
+
+        <div class="card">
+            <h2>📋 控制台日志</h2>
+            <button class="test-btn" onclick="clearLogs()">清空日志</button>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        const OUTPUT = document.getElementById('output');
+        let BACKEND_URL = localStorage.getItem('backendUrl') || 'http://localhost:8080';
+
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('zh-CN');
+            let prefix = '';
+            switch(type) {
+                case 'success': prefix = '✅'; break;
+                case 'error': prefix = '❌'; break;
+                case 'warning': prefix = '⚠️'; break;
+                case 'info': prefix = 'ℹ️'; break;
+            }
+            const line = `[${timestamp}] ${prefix} ${msg}\n`;
+            OUTPUT.textContent += line;
+            OUTPUT.scrollTop = OUTPUT.scrollHeight;
+            console.log(msg);
+        }
+
+        function updateStats() {
+            const stats = document.getElementById('stats');
+            const userInfo = localStorage.getItem('userInfo');
+            const token = localStorage.getItem('token');
+
+            stats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">后端 URL</div>
+                    <div class="stat-value" title="${BACKEND_URL}">${BACKEND_URL.substring(0, 30)}...</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">登录状态</div>
+                    <div class="stat-value">${userInfo ? '✅ 已登录' : '❌ 未登录'}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Token</div>
+                    <div class="stat-value">${token ? '✅ 存在' : '❌ 不存在'}</div>
+                </div>
+            `;
+        }
+
+        function saveBackendUrl() {
+            const url = document.getElementById('backendUrl').value.trim();
+            if (!url) {
+                alert('请输入有效的 URL');
+                return;
+            }
+            localStorage.setItem('backendUrl', url);
+            BACKEND_URL = url;
+            updateStats();
+            const resultDiv = document.getElementById('urlResult');
+            resultDiv.innerHTML = `<div class="result success">✅ 后端 URL 已保存: ${url}</div>`;
+            log(`✅ 后端 URL 已更新为: ${url}`, 'success');
+        }
+
+        function useLocalhost() {
+            document.getElementById('backendUrl').value = 'http://localhost:8080';
+            saveBackendUrl();
+        }
+
+        function useNgrok() {
+            const url = prompt('请输入 ngrok 暴露的 URL\n例如: https://abc123.ngrok.io');
+            if (url) {
+                document.getElementById('backendUrl').value = url;
+                saveBackendUrl();
+            }
+        }
+
+        async function testBackendConnection() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<div class="result info"><span class="loading">🔄</span> 正在测试后端连接...</div>';
+            log(`🔌 开始测试后端连接: ${BACKEND_URL}`, 'info');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'test', password: 'test123' })
+                });
+
+                log(`HTTP 状态码: ${response.status} ${response.statusText}`, 'info');
+                log(`响应头 Content-Type: ${response.headers.get('Content-Type')}`, 'info');
+
+                const data = await response.json();
+                log(`响应内容: ${JSON.stringify(data)}`, 'info');
+
+                if (data.code === 1 || response.status === 200) {
+                    resultDiv.innerHTML = '<div class="result success">✅ 后端连接正常！</div>';
+                    log('✅ 后端连接成功', 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ 后端连接失败: ${data.msg}</div>`;
+                    log(`❌ 错误: ${data.msg}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 连接失败: ${error.message}</div>`;
+                log(`❌ 错误: ${error.message}`, 'error');
+                log(`   后端 URL: ${BACKEND_URL}`, 'error');
+                log(`   请检查:', '
+                    - 后端是否运行在该 URL 上
+                    - ngrok 隧道是否仍然活跃
+                    - 网络连接是否正常`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<div class="result info"><span class="loading">🔄</span> 正在测试登录...</div>';
+            log(`🔐 开始登录测试: ${BACKEND_URL}/user/login`, 'info');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: 'test', password: 'test123' })
+                });
+
+                const data = await response.json();
+                log(`登录响应状态: ${response.status}`, 'info');
+
+                if (data.code === 1 && data.data) {
+                    const userInfo = data.data;
+                    localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                    localStorage.setItem('token', userInfo.token);
+                    updateStats();
+
+                    const html = `<div class="result success">
+                        ✅ 登录成功！<br/>
+                        用户ID: ${userInfo.userId}<br/>
+                        用户名: ${userInfo.username}<br/>
+                        Token: ${userInfo.token.substring(0, 20)}...<br/>
+                        邮箱: ${userInfo.email || 'N/A'}
+                    </div>`;
+                    resultDiv.innerHTML = html;
+                    log('✅ 登录成功', 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ 登录失败: ${data.msg}</div>`;
+                    log(`❌ 登录失败: ${data.msg}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 错误: ${error.message}</div>`;
+                log(`❌ 登录错误: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMovieList() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<div class="result info"><span class="loading">🔄</span> 正在获取电影列表...</div>';
+            log(`🎬 开始获取电影列表: ${BACKEND_URL}/movie/list`, 'info');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/movie/list?page=1&pageSize=5`);
+                const data = await response.json();
+
+                if (data.code === 1) {
+                    const movies = data.data.records || [];
+                    const html = `<div class="result success">
+                        ✅ 获取电影列表成功！<br/>
+                        共 ${data.data.total} 部电影<br/>
+                        获取了 ${movies.length} 部电影
+                    </div>`;
+                    resultDiv.innerHTML = html;
+                    log(`✅ 获取电影列表成功，共 ${data.data.total} 部电影`, 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ 获取失败: ${data.msg}</div>`;
+                    log(`❌ 获取失败: ${data.msg}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ 错误: ${error.message}</div>`;
+                log(`❌ 错误: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllApis() {
+            log('🔄 开始批量测试所有 API...', 'info');
+            const apis = [
+                { name: '电影列表', url: '/movie/list?page=1&pageSize=5' },
+                { name: '首页推荐', url: '/movie/recommend?limit=6' },
+                { name: '用户历史', url: '/movie/history?limit=10' }
+            ];
+
+            for (const api of apis) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}${api.url}`);
+                    const status = response.status === 200 ? '✅' : '❌';
+                    log(`${status} ${api.name}: ${response.status}`, 'info');
+                } catch (error) {
+                    log(`❌ ${api.name}: ${error.message}`, 'error');
+                }
+            }
+            log('✅ 批量测试完成', 'success');
+        }
+
+        function checkLocalStorage() {
+            const resultDiv = document.getElementById('storageResult');
+            log('📦 检查 localStorage...', 'info');
+
+            const userInfo = localStorage.getItem('userInfo');
+            const token = localStorage.getItem('token');
+            const backendUrl = localStorage.getItem('backendUrl');
+
+            let html = '<div class="result info">';
+
+            if (userInfo) {
+                const user = JSON.parse(userInfo);
+                html += `✅ userInfo 存在: ${user.username} (ID: ${user.userId})<br/>`;
+                log(`✅ userInfo: ${user.username}`, 'success');
+            } else {
+                html += `❌ userInfo 不存在<br/>`;
+                log('❌ userInfo 未找到', 'warning');
+            }
+
+            if (token) {
+                html += `✅ token 存在: ${token.substring(0, 20)}...<br/>`;
+                log(`✅ token: ${token.substring(0, 20)}...`, 'success');
+            } else {
+                html += `❌ token 不存在<br/>`;
+                log('❌ token 未找到', 'warning');
+            }
+
+            if (backendUrl) {
+                html += `✅ backendUrl: ${backendUrl}<br/>`;
+                log(`✅ backendUrl: ${backendUrl}`, 'success');
+            }
+
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+
+        function clearLogs() {
+            OUTPUT.textContent = '';
+            log('📝 日志已清空', 'info');
+        }
+
+        // 页面加载
+        window.addEventListener('load', () => {
+            document.getElementById('backendUrl').value = BACKEND_URL;
+            updateStats();
+            log('🚀 诊断工具已加载', 'success');
+            log(`当前后端 URL: ${BACKEND_URL}`, 'info');
+            log('💡 提示: 如果使用 ngrok，请点击 "ngrok 代理" 按钮配置', 'info');
+        });
+
+        // 按 Enter 键保存 URL
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('backendUrl');
+            if (urlInput) {
+                urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        saveBackendUrl();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+

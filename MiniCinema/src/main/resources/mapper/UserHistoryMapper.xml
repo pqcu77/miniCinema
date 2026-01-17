@@ -12,18 +12,8 @@
         <result property="createdAt" column="created_at" />
     </resultMap>
 
-    <!-- 1. 插入或更新用户行为 -->
-    <insert id="upsert" parameterType="com.cinema.minicinema.entity.UserHistory">
-        INSERT INTO user_history (
-            user_id, movie_id, action, score, created_at
-        ) VALUES (
-                     #{userId}, #{movieId}, #{action}, #{score}, CURRENT_TIMESTAMP
-                 )
-        ON CONFLICT (user_id, movie_id, action)
-            DO UPDATE SET
-                          score = EXCLUDED.score,
-                          created_at = CURRENT_TIMESTAMP
-    </insert>
+    <!-- NOTE: removed the ON CONFLICT upsert mapping because OpenGauss in this environment does not accept PostgreSQL-style ON CONFLICT.
+         We now perform update-then-insert from the mapper interface (annotated methods) to remain compatible. -->
 
     <!-- 2. 根据用户、电影和动作查询 -->
     <select id="findByUserAndMovieAndAction" resultMap="UserHistoryResultMap">

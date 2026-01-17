@@ -91,20 +91,20 @@ async function checkFavorite() {
     if (!user) return;
     const token = userState.getToken();
     try {
-        // Ensure we pass userId — backend expects it as request param
-        const favorites = await api.getFavorites(token, user.userId);
+        // Use api.getFavorites which now returns a normalized array of { movieId, posterUrl, title, rating }
+        const favList = await api.getFavorites(token, user.userId);
         const btn = document.getElementById('favoriteBtn');
         if (!btn) return;
 
-        // Normalize possible response shapes
-        let favList = [];
-        if (!favorites) favList = [];
-        else if (Array.isArray(favorites)) favList = favorites; // legacy
-        else if (favorites.data && Array.isArray(favorites.data.records)) favList = favorites.data.records;
-        else if (favorites.data && Array.isArray(favorites.data)) favList = favorites.data;
-        else if (favorites.records && Array.isArray(favorites.records)) favList = favorites.records;
+        // If api returned nothing or not an array, treat as not favorited
+        if (!Array.isArray(favList) || favList.length === 0) {
+            btn.textContent = '+ 收藏';
+            btn.dataset.isFavorite = 'false';
+            return;
+        }
 
-        const found = favList.some(fav => String(fav.movieId) === String(movieId) || String(fav.id) === String(movieId) || String(fav.movie_id) === String(movieId));
+        // favList items are normalized by api.getFavorites: movieId is string
+        const found = favList.some(fav => String(fav.movieId) === String(movieId));
 
         if (found) {
             btn.textContent = '✓ 已收藏';

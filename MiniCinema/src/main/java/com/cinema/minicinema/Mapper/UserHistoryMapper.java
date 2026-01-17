@@ -37,16 +37,34 @@ public interface UserHistoryMapper {
     // ===== 推荐算法需要的方法 =====
 
     /**
-     * 记录用户观看电影的历史
+     * 记录用户观看电影的历史 - split into update then insert to be compatible with databases
      */
+    @Update("UPDATE user_history SET created_at = #{viewTime}, watch_duration = #{watchDuration} " +
+            "WHERE user_id = #{userId} AND movie_id = #{movieId} AND action = 'view'")
+    int updateRecordUserHistory(@Param("userId") Long userId,
+                                @Param("movieId") Long movieId,
+                                @Param("viewTime") java.time.LocalDateTime viewTime,
+                                @Param("watchDuration") Integer watchDuration);
+
     @Insert("INSERT INTO user_history (user_id, movie_id, action, created_at, watch_duration) " +
-            "VALUES (#{userId}, #{movieId}, 'view', #{viewTime}, #{watchDuration}) " +
-            "ON CONFLICT (user_id, movie_id, action) DO UPDATE SET " +
-            "created_at = EXCLUDED.created_at, watch_duration = EXCLUDED.watch_duration")
-    void recordUserHistory(@Param("userId") Long userId,
-                          @Param("movieId") Long movieId,
-                          @Param("viewTime") java.time.LocalDateTime viewTime,
-                          @Param("watchDuration") Integer watchDuration);
+            "VALUES (#{userId}, #{movieId}, 'view', #{viewTime}, #{watchDuration})")
+    int insertRecordUserHistory(@Param("userId") Long userId,
+                                @Param("movieId") Long movieId,
+                                @Param("viewTime") java.time.LocalDateTime viewTime,
+                                @Param("watchDuration") Integer watchDuration);
+
+    // Fallback variants for databases without watch_duration column
+    @Update("UPDATE user_history SET created_at = #{viewTime} " +
+            "WHERE user_id = #{userId} AND movie_id = #{movieId} AND action = 'view'")
+    int updateRecordUserHistoryNoDuration(@Param("userId") Long userId,
+                                          @Param("movieId") Long movieId,
+                                          @Param("viewTime") java.time.LocalDateTime viewTime);
+
+    @Insert("INSERT INTO user_history (user_id, movie_id, action, created_at) " +
+            "VALUES (#{userId}, #{movieId}, 'view', #{viewTime})")
+    int insertRecordUserHistoryNoDuration(@Param("userId") Long userId,
+                                          @Param("movieId") Long movieId,
+                                          @Param("viewTime") java.time.LocalDateTime viewTime);
 
     /**
      * 获取用户已看过的电影ID列表

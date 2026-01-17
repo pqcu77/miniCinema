@@ -13,10 +13,12 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // 允许的来源（前端地址）
+                // 允许的来源（前端地址）- 支持本地、ngrok 等多种环境
                 .allowedOriginPatterns(
                         "http://localhost:*",
                         "http://127.0.0.1:*",
+                        "https://*.ngrok-free.dev",
+                        "https://*.ngrok.dev",
                         "file://*"
                 )
                 // 允许的 HTTP 方法

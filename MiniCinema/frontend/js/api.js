@@ -91,17 +91,40 @@ const api = {
     }).then(res => res.json());
   },
 
-  changePassword: (token, oldPassword, newPassword) => {
+  changePassword: (token, oldPassword, newPassword, confirmPassword, userId) => {
+    // resolve userId from userState/localStorage if not provided
+    let resolvedUserId = userId;
+    if (typeof resolvedUserId === 'undefined' || resolvedUserId === null) {
+      try {
+        const s = userState?.getUserId?.();
+        if (s) resolvedUserId = s;
+        else {
+          const u = JSON.parse(localStorage.getItem('userInfo'));
+          if (u && (u.userId || u.userId === 0)) resolvedUserId = u.userId;
+        }
+      } catch (e) {
+        resolvedUserId = null;
+      }
+    }
+
+    const body = {
+      userId: resolvedUserId,
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword || newPassword
+    };
+
     const headers = token ? {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     } : { 'Content-Type': 'application/json' };
 
-    return fetch(`${API_BASE_URL}/user/changePassword`, {
-      method: 'POST',
+    const urlUserParam = resolvedUserId ? `?userId=${encodeURIComponent(resolvedUserId)}` : '';
+    return fetch(`${API_BASE_URL}/user/changePassword${urlUserParam}`, {
+      method: 'PUT',
       headers,
       credentials: 'include',
-      body: JSON.stringify({ oldPassword, newPassword })
+      body: JSON.stringify(body)
     }).then(res => res.json());
   },
 

@@ -1,0 +1,45 @@
+<!--
+  MiniCinema - API 配置加载器
+  用于在 ngrok 环境下自动配置 API URL
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MiniCinema 配置</title>
+  <script>
+    // 自动检测并设置 API 基础 URL
+    (function() {
+      // 获取当前主机名和协议
+      const protocol = window.location.protocol; // https: 或 http:
+      const hostname = window.location.hostname;
+      const port = window.location.port ? ':' + window.location.port : '';
+
+      // 判断是否通过 ngrok（检查 ngrok 特定的主机名模式）
+      const isNgrok = hostname.includes('ngrok') || hostname.includes('ngrok-free');
+
+      // 构建 API URL
+      let apiUrl;
+      if (isNgrok) {
+        // ngrok 环境：使用相同的主机名和协议
+        apiUrl = `${protocol}//${hostname}${port}`;
+        console.log('🌐 检测到 ngrok 环境，API URL:', apiUrl);
+      } else {
+        // 本地环境：使用 localhost:8080
+        apiUrl = 'http://localhost:8080';
+        console.log('🏠 本地环境，API URL:', apiUrl);
+      }
+
+      // 保存到 localStorage
+      localStorage.setItem('backendUrl', apiUrl);
+      window.API_BASE_URL = apiUrl;
+
+      console.log('✅ API 配置已加载:', apiUrl);
+    })();
+  </script>
+</head>
+<body>
+  <p>正在加载 MiniCinema 配置...</p>
+</body>
+</html>
+

@@ -43,6 +43,17 @@ function initLoginPage() {
       const response = await api.login(username, password);
       console.log('📥 登录 API 响应:', response);
 
+      // 检查响应是否为有效对象
+      if (!response || typeof response !== 'object') {
+        console.error('❌ 响应格式错误，不是有效的JSON对象:', typeof response);
+        showMessage('网络错误：无效的服务器响应', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '立即登录';
+        }
+        return;
+      }
+
       if (response.code === 1 && response.data) {
         console.log('✅ 登录成功，保存用户信息');
 
@@ -70,7 +81,7 @@ function initLoginPage() {
           window.location.href = 'movies.html';
         }, 1500);
       } else {
-        console.error('❌ 登录失败:', response.msg);
+        console.error('❌ 登录失败，响应代码:', response.code, '消息:', response.msg);
         showMessage(response.msg || '登录失败，请检查用户名和密码', 'error');
         if (btn) {
           btn.disabled = false;
@@ -78,8 +89,11 @@ function initLoginPage() {
         }
       }
     } catch (error) {
-      console.error('❌ 登录错误:', error);
-      showMessage('网络错误，请检查后端服务是否启动', 'error');
+      console.error('❌ 登录错误详情:');
+      console.error('   错误类型:', error.name);
+      console.error('   错误信息:', error.message);
+      console.error('   完整错误:', error);
+      showMessage('网络错误，请检查后端服务是否启动（后端地址：http://localhost:8080）', 'error');
       if (btn) {
         btn.disabled = false;
         btn.textContent = '立即登录';
